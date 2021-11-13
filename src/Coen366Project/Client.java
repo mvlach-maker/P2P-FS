@@ -22,7 +22,7 @@ public class Client {
 	int tcpSocketNumber; 
 	InetAddress ipClient;
 
-	public static void main(String[]  args) throws InterruptedException, IOException {
+	public static void main(String[]  args) throws InterruptedException, IOException, JSONException {
 		
 		// Set request method
 
@@ -39,23 +39,18 @@ public class Client {
 		JSONObject registerObj = new JSONObject();
 
 		boolean i = true;
-		while (i) {
-			System.out.println("Type A to Login, B to Register, or C to De-Register:");
+		System.out.println("Enter username: ");
+		String username = reader.next();
 
+		while (i) {
+
+			System.out.println("Type A to Login, B to Register, C to De-Register or X to Logout:");
 			String n = reader.next();
 
 			if (n.equals("a") || n.equals("A")) {
-				// Login
-				System.out.println("Enter username: ");
-				String username = reader.next();
 				// Put this command in a JSon Object
 				try {
 					registerObj.put("header", "Login");
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-				try {
-					registerObj.put("username", username);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -64,15 +59,8 @@ public class Client {
 
 			else if (n.equals("b") || n.equals("B")) {
 				// Register
-				System.out.println("Enter username: ");
-				String username = reader.next();
 				try {
 					registerObj.put("header", "Register");
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-				try {
-					registerObj.put("username", username);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
@@ -81,23 +69,27 @@ public class Client {
 
 			else if (n.equals("c") || n.equals("C")) {
 				// deRegister
-				System.out.println("Enter username: ");
-				String username = reader.next();
 				try {
 					registerObj.put("header", "De-Register");
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-				try {
-					registerObj.put("username", username);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
 				i = false;
 			}
 
+			else if (n.equals("x") || n.equals("X")) {
+				registerObj.put("header", "Logout");
+				i = false;
+			}
+
 			else {
 				System.out.println("Please enter a valid key.");
+			}
+
+			try {
+				registerObj.put("username", username);
+			} catch (JSONException e) {
+				e.printStackTrace();
 			}
 		}
 

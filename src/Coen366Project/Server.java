@@ -10,7 +10,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket; 
 import java.net.InetAddress; 
 import java.net.SocketException;
-import java.util.ArrayList; 
+import java.util.Scanner;
+
 // import networking.udpBaseClient; 
 
 // Program runnning on end host and  and poviding service to many clients 
@@ -36,7 +37,6 @@ public class Server {
 
 		DatagramSocket server = null;
 		int requestNumber = 1;
-
 		try {
 			server = new DatagramSocket(Coen366Project.Main.serverPort);
 		} catch (SocketException e) {
@@ -44,8 +44,11 @@ public class Server {
 		}
 
 		// Read data from client
-			byte[] buf = new byte[256];
+		byte[] buf = new byte[256];
+
+		while (true) {
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
+
 			try {
 				server.receive(packet);
 			} catch (IOException e) {
@@ -60,6 +63,7 @@ public class Server {
 			// Get request  in String
 			String request = new String(packet.getData());
 			System.out.println(request);
+			buf = new byte[256];
 
 			// Request number will be automatically generated
 			try {
@@ -69,12 +73,13 @@ public class Server {
 				JSONObject jsonRequest = new JSONObject();
 
 				// Update json file with all the requests
+				String username = null;
 
 				switch (header) {
 
 					case "Login":
 
-						String username = (String) jsonResponse.get("username");
+						username = (String) jsonResponse.get("username");
 
 						jsonRequest.put("header", "Login");
 						jsonRequest.put("rq", requestNumber);
@@ -84,34 +89,50 @@ public class Server {
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", true);
 
+						// Check if they are on the list
+						break;
+
 					case "Register":
 						// Form complete request and insert into Json File
-						// username = (String) jsonResponse.get("username");
+						username = (String) jsonResponse.get("username");
 
 						jsonRequest.put("header", "Register");
 						jsonRequest.put("rq", requestNumber);
-						// jsonRequest.put("username", username);
+						jsonRequest.put("username", username);
 						jsonRequest.put("ip", clientIp);
 						jsonRequest.put("udp", Main.serverPort);
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", true);
-
 						// SEND THIS OBJECT TO REGISTRATION
 
+						break;
+
 					case "De-Register":
-						// username = (String) jsonResponse.get("username");
+						username = (String) jsonResponse.get("username");
+
 						jsonRequest.put("header", "De-Register");
 						jsonRequest.put("rq", requestNumber);
-						// jsonRequest.put("username", username);
+						jsonRequest.put("username", username);
 						jsonRequest.put("login", false);
+						break;
+
+					case "Logout":
+						username = (String) jsonResponse.get("username");
+						System.out.println( username + " is exiting.");
 
 					case "Publish":
+						break;
 					case "Remove":
+						break;
 					case "Retrieve-All":
+						break;
 					case "Retrieve-Info":
+						break;
 					case "Search-File":
+						break;
 					case "Update-Contact":
-						default:
+						break;
+					default:
 
 				}
 
@@ -123,20 +144,15 @@ public class Server {
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
-
-
-
-
-			// Decipher what the client said
-
-			// Get value by key and do a switch case
-
-
-
-			server.close();
-
-			}
 		}
+
+		// Decipher what the client said
+
+		// Get value by key and do a switch case
+
+	}
+}
+
 
 
 

@@ -10,10 +10,17 @@ import java.net.InetAddress;
 
 public class Registration {
 
+	DatagramSocket serverSocket;
+	File clientListJson;
+
+	public Registration(DatagramSocket serverSocket, File clientListJson){
+		this.serverSocket = serverSocket;
+		this.clientListJson = clientListJson;
+	}
 	public void login(String username, InetAddress ip) {
 		// Go through the client list and match username and ip
 		// if there is no match - tell the user that there is no existing client and restart the Client thread
-
+		// Create message to send back to client
 	}
 
 	public void Register(DatagramSocket serverSocket, File clientListJson) {
