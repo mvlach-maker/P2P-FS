@@ -105,10 +105,10 @@ public class Client {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		reader.close();
 
-		// System.out.println("Client local socket: " + Coen366Project.Main.serverIp);
-		//System.out.println("INET ADDRESS: " + add);
+		// Get list of options to do various things 
+
+		reader.close();
 		client.close();
 	}
 	

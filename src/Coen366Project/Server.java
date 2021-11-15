@@ -1,5 +1,6 @@
 package Coen366Project;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -10,10 +11,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket; 
 import java.net.InetAddress; 
 import java.net.SocketException;
-import java.util.Scanner;
 
-// import networking.udpBaseClient; 
-
+// import networking.udpBaseClient;
 // Program runnning on end host and  and poviding service to many clients 
 // Always on, waiting for client requests
 // Does not initiate communication with clients 
@@ -25,15 +24,17 @@ import java.util.Scanner;
 
 public class Server {
 	
-	int serverPortNumber;
-	File clientDatabase;
-	
-	public Server() {
-	// You need a file with client information  
-	clientDatabase = new File("clientDatabase.json");
-	}
+	// What if the server unexpectedly shuts down?
+	// How will we save our info?
+	static File requestLogFile;
+	static File clientListFile;
+	static JSONArray clientListArray;
 
 	public static void main(String[]  args) throws InterruptedException, IOException {
+
+		requestLogFile = new File("requestLog.json");
+		clientListFile = new File("clientList.json");
+		clientListArray = new JSONArray();
 
 		DatagramSocket server = null;
 		int requestNumber = 1;
@@ -47,6 +48,7 @@ public class Server {
 		byte[] buf = new byte[256];
 
 		while (true) {
+
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 
 			try {
@@ -62,7 +64,8 @@ public class Server {
 
 			// Get request  in String
 			String request = new String(packet.getData());
-			System.out.println(request);
+			// System.out.println(request);
+
 			buf = new byte[256];
 
 			// Request number will be automatically generated
@@ -74,6 +77,7 @@ public class Server {
 
 				// Update json file with all the requests
 				String username = null;
+				Registration register;
 
 				switch (header) {
 
@@ -89,10 +93,13 @@ public class Server {
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", true);
 
+						register = new Registration(server);
+						register.login(jsonRequest);
 						// Check if they are on the list
 						break;
 
 					case "Register":
+
 						// Form complete request and insert into Json File
 						username = (String) jsonResponse.get("username");
 
@@ -103,17 +110,24 @@ public class Server {
 						jsonRequest.put("udp", Main.serverPort);
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", true);
-						// SEND THIS OBJECT TO REGISTRATION
 
+						// Create registration object
+						register = new Registration(server);
+						clientListArray = register.register(jsonRequest, clientListArray);
+						System.out.println(clientListArray.toString());
 						break;
 
 					case "De-Register":
+
 						username = (String) jsonResponse.get("username");
 
 						jsonRequest.put("header", "De-Register");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
 						jsonRequest.put("login", false);
+
+						register = new Registration(server);
+						register.deRegister(jsonRequest, clientListArray);
 						break;
 
 					case "Logout":
@@ -136,8 +150,7 @@ public class Server {
 
 				}
 
-				requestNumber++;
-				System.out.println(jsonRequest.toString());
+				requestNumber++; // how will the system retain the request number
 
 				// Write in request file
 
@@ -146,9 +159,9 @@ public class Server {
 			}
 		}
 
-		// Decipher what the client said
+		// Convert JSONArray to string
 
-		// Get value by key and do a switch case
+		// Save data so that the server can retrieve info if it shuts down
 
 	}
 }
