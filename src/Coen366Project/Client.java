@@ -3,19 +3,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.Timer;
 
-import java.io.IOException;
-import java.util.Scanner; 
-import java.io.FileWriter;
-import java.io.File;
+import java.util.Scanner;
 import java.net.*;
 
 // Is on when it first needs to send a request 
 // Initiates communication by sending a request 
 // Needs to know the server's address: IP address and port number
 
-public class Client {
+public abstract class Client {
 
 	boolean login;
 	String username;
@@ -32,6 +28,8 @@ public class Client {
 
 	public static void main(String[]  args) throws InterruptedException, IOException, JSONException {
 
+		// Declare datagramSocket
+
 		DatagramSocket client = null;
 
 		try {
@@ -40,17 +38,42 @@ public class Client {
 			e.printStackTrace();
 		}
 
+		// Declare scanner
 		Scanner reader = new Scanner(System.in);
+
+		// Call firstStep method and give it the socket & scanner
+		Client.firstStep(client, reader);
+
+
+		// call this function again and again if the client de-registers or logs out
+		Client.firstStep(client, reader);
+		// If the response is logged in or registered
+		// If not
+		// Explore more options
+		// Publish, remove, retrieve, search file, download, update contact,
+
+
+
+
+		// close client and reader
+		reader.close();
+		client.close();
+
+	}
+
+
+	// FUNCTION TO START THE FIRST STEP OF THE CLIENT PROCESS
+	public static JSONObject firstStep(DatagramSocket client, Scanner reader) throws JSONException {
 
 		JSONObject registerObj = new JSONObject();
 
 		boolean i = true;
 		System.out.println("Enter username: ");
-		String username = reader.next();
+		String username;
+		username = reader.next();
 
 		while (i) {
 
-			System.out.println("Type A to Login, B to Register, C to De-Register or X to Logout:");
 			String n = reader.next();
 
 			if (n.equalsIgnoreCase("a")) {
@@ -105,17 +128,23 @@ public class Client {
 		DatagramPacket p = new DatagramPacket(registerBytes,
 				registerBytes.length, Main.serverIp, Main.serverPort);
 
+		// client sends it to the server
 		try {
 			client.send(p);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 		// Json Object gets sent to client
 
 		byte[] buf = new byte[300];
 		DatagramPacket packet = new DatagramPacket(buf,
 				buf.length);
+
+		// timer; so the client is not trapped waiting for a response indefinitely
+		// schedule a timer to timeout after x amount of seconds of no response
+		// Timer responseTimer = new Timer();
+
+
 		try {
 			client.receive(packet);
 		} catch (IOException e) {
@@ -127,15 +156,14 @@ public class Client {
 		JSONObject jsonResponse = new JSONObject(serverResponse);
 		System.out.println("Server response: " + jsonResponse.toString());
 
-		// Explore more options
-		// Publish, remove, retrieve, search file, download, update contact,
-
-		// Get list of options to do various things
-		reader.close();
-		client.close();
+		// Use the Json response to continue the program
+		return jsonResponse;
 
 	}
-	
+
+
+
+
 }
 
 		

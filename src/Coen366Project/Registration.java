@@ -27,7 +27,8 @@ public class Registration {
 		buffer = new byte[256];
 		response = new JSONObject();
 	}
-	public boolean isRegistered(JSONObject client, JSONArray clientListArray) throws JSONException {
+
+	public boolean isRegisteredLoggedIn(JSONObject client, JSONArray clientListArray) throws JSONException {
 
 		boolean isRegistered = false;
 

@@ -29,7 +29,6 @@ public class Server {
 
 	public static void main(String[] args) throws InterruptedException, IOException {
 
-		byte[] buf = new byte[256];
 		requestLogFile = new File("requestLog.json");
 		clientListFile = new File("clientList.json");
 		clientListArray = new JSONArray();
@@ -39,7 +38,7 @@ public class Server {
 		DatagramSocket serverSocket = new DatagramSocket(Coen366Project.Main.serverPort);
 
 		while (true) {
-
+			byte[] buf = new byte[256];
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 
 			try {
