@@ -16,15 +16,21 @@ import java.net.*;
 // Needs to know the server's address: IP address and port number
 
 public class Client {
- 
-	// Client information 
-	String clientName;
-	int tcpSocketNumber; 
-	InetAddress ipClient;
+
+	boolean login;
+	String username;
+	InetAddress clientIp;
+	int clientPort;
+
+	// Constructor
+	public Client(boolean login, String username, InetAddress clientIp, int clientPort){
+		this.login = login;
+		this.username = username;
+		this.clientIp = clientIp;
+		this.clientPort = clientPort;
+	}
 
 	public static void main(String[]  args) throws InterruptedException, IOException, JSONException {
-		
-		// Set request method
 
 		DatagramSocket client = null;
 
@@ -47,7 +53,7 @@ public class Client {
 			System.out.println("Type A to Login, B to Register, C to De-Register or X to Logout:");
 			String n = reader.next();
 
-			if (n.equals("a") || n.equals("A")) {
+			if (n.equalsIgnoreCase("a")) {
 				// Put this command in a JSon Object
 				try {
 					registerObj.put("header", "Login");
@@ -57,7 +63,7 @@ public class Client {
 				i = false;
 			}
 
-			else if (n.equals("b") || n.equals("B")) {
+			else if (n.equalsIgnoreCase("b")) {
 				// Register
 				try {
 					registerObj.put("header", "Register");
@@ -67,7 +73,7 @@ public class Client {
 				i = false;
 			}
 
-			else if (n.equals("c") || n.equals("C")) {
+			else if (n.equalsIgnoreCase("c")) {
 				// deRegister
 				try {
 					registerObj.put("header", "De-Register");
@@ -77,7 +83,7 @@ public class Client {
 				i = false;
 			}
 
-			else if (n.equals("x") || n.equals("X")) {
+			else if (n.equalsIgnoreCase("x")) {
 				registerObj.put("header", "Logout");
 				i = false;
 			}
@@ -94,11 +100,10 @@ public class Client {
 		}
 
 		// Json Object gets sent to server
-
 		byte[] registerBytes = registerObj.toString().getBytes();
 
 		DatagramPacket p = new DatagramPacket(registerBytes,
-				registerBytes.length, Coen366Project.Main.serverIp, Coen366Project.Main.serverPort);
+				registerBytes.length, Main.serverIp, Main.serverPort);
 
 		try {
 			client.send(p);
@@ -106,10 +111,29 @@ public class Client {
 			e.printStackTrace();
 		}
 
-		// Get list of options to do various things 
+		// Json Object gets sent to client
 
+		byte[] buf = new byte[300];
+		DatagramPacket packet = new DatagramPacket(buf,
+				buf.length);
+		try {
+			client.receive(packet);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// Receive a response from the server
+		String serverResponse = new String(packet.getData());
+		JSONObject jsonResponse = new JSONObject(serverResponse);
+		System.out.println("Server response: " + jsonResponse.toString());
+
+		// Explore more options
+		// Publish, remove, retrieve, search file, download, update contact,
+
+		// Get list of options to do various things
 		reader.close();
 		client.close();
+
 	}
 	
 }

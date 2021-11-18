@@ -13,46 +13,37 @@ import java.net.InetAddress;
 import java.net.SocketException;
 
 // import networking.udpBaseClient;
-// Program runnning on end host and  and poviding service to many clients 
+// Program runnning on end host and  and providing service to many clients
 // Always on, waiting for client requests
 // Does not initiate communication with clients 
-// Needs to have a known address 
-
-// 1 Server listening at a specific port 
-
+// Needs to have a known address
+// 1 Server listening at a specific port
 // A socket connection means the two machines have information about each other’s network location (IP Address) and TCP port.
-
 public class Server {
-	
+
 	// What if the server unexpectedly shuts down?
 	// How will we save our info?
 	static File requestLogFile;
 	static File clientListFile;
 	static JSONArray clientListArray;
 
-	public static void main(String[]  args) throws InterruptedException, IOException {
+	public static void main(String[] args) throws InterruptedException, IOException {
 
+		byte[] buf = new byte[256];
 		requestLogFile = new File("requestLog.json");
 		clientListFile = new File("clientList.json");
 		clientListArray = new JSONArray();
 
-		DatagramSocket server = null;
 		int requestNumber = 1;
-		try {
-			server = new DatagramSocket(Coen366Project.Main.serverPort);
-		} catch (SocketException e) {
-			e.printStackTrace();
-		}
 
-		// Read data from client
-		byte[] buf = new byte[256];
+		DatagramSocket serverSocket = new DatagramSocket(Coen366Project.Main.serverPort);
 
 		while (true) {
 
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
 
 			try {
-				server.receive(packet);
+				serverSocket.receive(packet);
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -64,12 +55,10 @@ public class Server {
 
 			// Get request  in String
 			String request = new String(packet.getData());
-			// System.out.println(request);
-
-			buf = new byte[256];
-
+			System.out.println("Request from client: " + request);
 			// Request number will be automatically generated
 			try {
+
 				JSONObject jsonResponse = new JSONObject(request);
 				String header = (String) jsonResponse.get("header");
 
@@ -93,9 +82,11 @@ public class Server {
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", true);
 
-						register = new Registration(server);
-						register.login(jsonRequest);
-						// Check if they are on the list
+						register = new Registration(serverSocket);
+						register.login(jsonRequest, clientListArray, requestNumber);
+
+						// Once the user is logged in they can share files
+
 						break;
 
 					case "Register":
@@ -112,9 +103,10 @@ public class Server {
 						jsonRequest.put("login", true);
 
 						// Create registration object
-						register = new Registration(server);
-						clientListArray = register.register(jsonRequest, clientListArray);
-						System.out.println(clientListArray.toString());
+						register = new Registration(serverSocket);
+						clientListArray = register.register(jsonRequest, clientListArray, requestNumber);
+
+						// Automatically logged in, they can share files
 						break;
 
 					case "De-Register":
@@ -124,15 +116,27 @@ public class Server {
 						jsonRequest.put("header", "De-Register");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
+						jsonRequest.put("ip", clientIp);
+						jsonRequest.put("udp", Main.serverPort);
+						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", false);
 
-						register = new Registration(server);
-						register.deRegister(jsonRequest, clientListArray);
+						register = new Registration(serverSocket);
+						register.deRegister(jsonRequest, clientListArray, requestNumber);
 						break;
 
 					case "Logout":
+
 						username = (String) jsonResponse.get("username");
-						System.out.println( username + " is exiting.");
+						register = new Registration(serverSocket);
+						jsonRequest.put("header", "Logout");
+						jsonRequest.put("rq", requestNumber);
+						jsonRequest.put("username", username);
+						jsonRequest.put("ip", clientIp);
+						jsonRequest.put("tcp", clientTcpPort);
+						jsonRequest.put("login", false);
+						register.logout(jsonRequest, clientListArray, requestNumber);
+						break;
 
 					case "Publish":
 						break;
@@ -149,22 +153,16 @@ public class Server {
 					default:
 
 				}
-
 				requestNumber++; // how will the system retain the request number
-
-				// Write in request file
-
 			} catch (JSONException e) {
 				e.printStackTrace();
 			}
+			System.out.println("Client List: " + clientListArray.toString());
 		}
-
-		// Convert JSONArray to string
-
-		// Save data so that the server can retrieve info if it shuts down
-
 	}
+
 }
+
 
 
 
