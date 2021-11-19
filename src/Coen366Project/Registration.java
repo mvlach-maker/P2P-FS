@@ -16,19 +16,23 @@ public class Registration {
 	JSONObject response;
 
 	DatagramSocket serverSocket;
+	JSONArray clientListLoggedOn;
+	JSONArray clientListArray;
 	private byte[] buffer;
 	DatagramPacket packet;
 	int requestNumber;
 
 	// Constructor
-	public Registration(DatagramSocket serverSocket){
+	public Registration(DatagramSocket serverSocket, JSONArray clientListArray, JSONArray clientListLoggedOn){
 		this.serverSocket = serverSocket;
+		this.clientListArray = clientListArray;
+		this.clientListLoggedOn = clientListLoggedOn;
 		response = new JSONObject();
 		buffer = new byte[256];
 		response = new JSONObject();
 	}
 
-	public boolean isRegisteredLoggedIn(JSONObject client, JSONArray clientListArray) throws JSONException {
+	public boolean isRegistered(JSONObject client, JSONArray clientListArray) throws JSONException {
 
 		boolean isRegistered = false;
 
@@ -56,13 +60,19 @@ public class Registration {
 		return isRegistered;
 	}
 
-	public boolean login(JSONObject client, JSONArray clientListJson, int requestNumber) throws JSONException {
+	public boolean isLoggedOn(JSONObject client) throws JSONException {
 
-		boolean login = false;
+		boolean isLoggedOn = false;
 
-		for (int i = 0; i < clientListJson.length(); i++) {
-			JSONObject clientObject = clientListJson.getJSONObject(i);
-			// System.out.println(clientObject.toString());
+		for (int i = 0; i < clientListLoggedOn.length(); i++) {
+
+			JSONObject clientObject = null;
+			try {
+				clientObject = clientListLoggedOn.getJSONObject(i);
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+
 			String username1 = (String) clientObject.get("username");
 			InetAddress ip1 = (InetAddress) clientObject.get("ip");
 
@@ -70,30 +80,12 @@ public class Registration {
 			InetAddress ip2 = (InetAddress) client.get("ip");
 
 			if (username1.equalsIgnoreCase(username2) && ip1.equals(ip2)) {
-				clientListJson.getJSONObject(i).put("login", 1);
-				response.put("header", "logged-in");
-				response.put("rq", requestNumber);
-				login = true;
+				// This client is already registered
+				isLoggedOn = true;
 				break;
 			}
-			else continue;
 		}
-
-		// Send response to client
-		InetAddress clientIp = (InetAddress) client.get("ip");
-		int clientPort = (int) client.get("tcp");
-
-		byte[] responseBytes = response.toString().getBytes();
-
-		DatagramPacket p = new DatagramPacket(responseBytes,
-				responseBytes.length, clientIp, clientPort);
-
-		try {
-			serverSocket.send(p);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return login;
+		return isLoggedOn;
 	}
 
 	public void logout(JSONObject client, JSONArray clientListJson, int requestNumber) throws JSONException {
@@ -134,13 +126,19 @@ public class Registration {
 		}
 	}
 
-	public JSONArray register(JSONObject client, JSONArray clientListJson, int requestNumber) throws IOException, JSONException {
+	public JSONArray getClientListLoggedOn() {
+		return clientListLoggedOn;
+	}
+
+	public JSONArray register(JSONObject client, int requestNumber) throws IOException, JSONException {
+
+		this.clientListLoggedOn = clientListLoggedOn;
 
 		boolean registrationAccepted = true;
 
-			for (int i = 0; i < clientListJson.length(); i++) {
+			for (int i = 0; i < clientListArray.length(); i++) {
 
-				JSONObject clientObject = clientListJson.getJSONObject(i);
+				JSONObject clientObject = clientListArray.getJSONObject(i);
 				// System.out.println(clientObject.toString());
 				String username1 = (String) clientObject.get("username");
 				InetAddress ip1 = (InetAddress) clientObject.get("ip");
@@ -157,8 +155,12 @@ public class Registration {
 					response.put("reason", "You are already registered.");
 					System.out.println(response.toString());
 					registrationAccepted = false;
-					break;
 
+					// Write to clientListLoggedOn
+					if (!isLoggedOn(client))  {
+						clientListLoggedOn.put(client);
+					}
+					break;
 				} else if (username1.equalsIgnoreCase(username2) && !ip1.equals(ip2)) {
 
 					// username is already in use
@@ -176,8 +178,9 @@ public class Registration {
 			// We register the client
 			response.put("header", "Registered");
 			response.put("rq", requestNumber);
-			clientListJson.put(client);
+			clientListArray.put(client);
 			// System.out.println(response.toString());
+			clientListLoggedOn.put(client);
 		}
 		System.out.println("Response sent to client: " + response.toString());
 
@@ -195,7 +198,7 @@ public class Registration {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return clientListJson;
+		return clientListArray;
 	}
 
 	public void deRegister(JSONObject client, JSONArray clientListJson, int requestNumber) throws JSONException {
@@ -221,6 +224,7 @@ public class Registration {
 			if (username1.equalsIgnoreCase(username2) && ip1.equals(ip2)) {
 				// You are already registered, delete user
 				clientListJson.remove(i);
+				clientListLoggedOn.remove(i);
 				// No need for a response
 				response.put("header", "De-Registered");
 				response.put("rq", requestNumber);
