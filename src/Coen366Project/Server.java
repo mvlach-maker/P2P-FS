@@ -26,14 +26,12 @@ public class Server {
 	static File requestLogFile;
 	static File clientListFile;
 	static JSONArray clientListArray;
-	static JSONArray clientListLoggedOn;
 
-	public static void main(String[] args) throws InterruptedException, IOException, JSONException {
+	public static void main(String[] args) throws InterruptedException, IOException {
 
 		requestLogFile = new File("requestLog.json");
 		clientListFile = new File("clientList.json");
 		clientListArray = new JSONArray();
-		clientListLoggedOn = new JSONArray();
 
 		int requestNumber = 1;
 
@@ -69,30 +67,47 @@ public class Server {
 				String username = null;
 				Registration register;
 
-				if (header.equals("Register")) {
+				switch (header) {
 
-					// Form complete request and insert into Json File
-					username = (String) jsonResponse.get("username");
+					case "Login":
 
-					jsonRequest.put("header", "Register");
-					jsonRequest.put("rq", requestNumber);
-					jsonRequest.put("username", username);
-					jsonRequest.put("ip", clientIp);
-					jsonRequest.put("udp", Main.serverPort);
-					jsonRequest.put("tcp", clientTcpPort);
-					jsonRequest.put("login", true);
+						username = (String) jsonResponse.get("username");
 
-					// Create registration object
-					register = new Registration(serverSocket, clientListArray, clientListLoggedOn);
+						jsonRequest.put("header", "Login");
+						jsonRequest.put("rq", requestNumber);
+						jsonRequest.put("username", username);
+						jsonRequest.put("ip", clientIp);
+						jsonRequest.put("udp", Main.serverPort);
+						jsonRequest.put("tcp", clientTcpPort);
+						jsonRequest.put("login", true);
 
-					clientListArray = register.register(jsonRequest, requestNumber);
-					clientListLoggedOn = register.getClientListLoggedOn();
+						register = new Registration(serverSocket);
+						register.login(jsonRequest, clientListArray, requestNumber);
 
-					// Automatically logged in, they can share files
-					System.out.println("Client List Array: " + clientListArray.toString());
-					System.out.println("Client List Logged on: " + clientListLoggedOn.toString());
-				}
-/*
+						// Once the user is logged in they can share files
+
+						break;
+
+					case "Register":
+
+						// Form complete request and insert into Json File
+						username = (String) jsonResponse.get("username");
+
+						jsonRequest.put("header", "Register");
+						jsonRequest.put("rq", requestNumber);
+						jsonRequest.put("username", username);
+						jsonRequest.put("ip", clientIp);
+						jsonRequest.put("udp", Main.serverPort);
+						jsonRequest.put("tcp", clientTcpPort);
+						jsonRequest.put("login", true);
+
+						// Create registration object
+						register = new Registration(serverSocket);
+						clientListArray = register.register(jsonRequest, clientListArray, requestNumber);
+
+						// Automatically logged in, they can share files
+						break;
+
 					case "De-Register":
 
 						username = (String) jsonResponse.get("username");
@@ -105,14 +120,14 @@ public class Server {
 						jsonRequest.put("tcp", clientTcpPort);
 						jsonRequest.put("login", false);
 
-						register = new Registration(serverSocket, clientListArray, clientListLoggedOn);
+						register = new Registration(serverSocket);
 						register.deRegister(jsonRequest, clientListArray, requestNumber);
 						break;
 
 					case "Logout":
 
 						username = (String) jsonResponse.get("username");
-						register = new Registration(serverSocket, clientListArray, clientListLoggedOn);
+						register = new Registration(serverSocket);
 						jsonRequest.put("header", "Logout");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
@@ -135,18 +150,17 @@ public class Server {
 					case "Update-Contact":
 						break;
 					default:
-*/
-				} catch (JSONException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
+
+				}
+				requestNumber++; // how will the system retain the request number
+			} catch (JSONException e) {
 				e.printStackTrace();
 			}
-			requestNumber++; // how will the system retain the request number
-			}
-			//System.out.println("Client List: " + clientListArray.toString());
+			System.out.println("Client List: " + clientListArray.toString());
 		}
 	}
 
+}
 
 
 
