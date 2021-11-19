@@ -87,6 +87,7 @@ public class Server {
 
 					clientListArray = register.register(jsonRequest, requestNumber);
 					clientListLoggedOn = register.getClientListLoggedOn();
+
 					// Automatically logged in, they can share files
 					System.out.println("Client List Array: " + clientListArray.toString());
 					System.out.println("Client List Logged on: " + clientListLoggedOn.toString());
