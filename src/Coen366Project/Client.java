@@ -41,26 +41,38 @@ public abstract class Client {
 		// Declare scanner
 		Scanner reader = new Scanner(System.in);
 
-		// Call firstStep method and give it the socket & scanner
-		Client.firstStep(client, reader);
+		boolean i = true;
+		while(i) {
+			// Call firstStep method and give it the socket & scanner
+			JSONObject JsonResponseRegistration = Client.firstStep(client, reader);
 
+			String header = (String) JsonResponseRegistration.get("header");
+			if (header.equals("Registered")) {
+				// You are logged in
 
-		// call this function again and again if the client de-registers or logs out
-		Client.firstStep(client, reader);
+				i = false;
+			} else if (header.equals("Register-Denied")) {
+				String reason = (String) JsonResponseRegistration.get("reason");
+				if (reason.equals("You are already registered.")) {
+					// You are logged in
+
+					i = false;
+				}
+			} else {
+				// You are not logged in, stay in the loop
+			}
+		}
+
 		// If the response is logged in or registered
 		// If not
 		// Explore more options
 		// Publish, remove, retrieve, search file, download, update contact,
 
 
-
-
 		// close client and reader
 		reader.close();
 		client.close();
-
 	}
-
 
 	// FUNCTION TO START THE FIRST STEP OF THE CLIENT PROCESS
 	public static JSONObject firstStep(DatagramSocket client, Scanner reader) throws JSONException {
@@ -72,55 +84,13 @@ public abstract class Client {
 		String username;
 		username = reader.next();
 
-		while (i) {
-
-			String n = reader.next();
-
-			if (n.equalsIgnoreCase("a")) {
-				// Put this command in a JSon Object
-				try {
-					registerObj.put("header", "Login");
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-				i = false;
-			}
-
-			else if (n.equalsIgnoreCase("b")) {
-				// Register
+		// Register
 				try {
 					registerObj.put("header", "Register");
+					registerObj.put("username", username);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
-				i = false;
-			}
-
-			else if (n.equalsIgnoreCase("c")) {
-				// deRegister
-				try {
-					registerObj.put("header", "De-Register");
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-				i = false;
-			}
-
-			else if (n.equalsIgnoreCase("x")) {
-				registerObj.put("header", "Logout");
-				i = false;
-			}
-
-			else {
-				System.out.println("Please enter a valid key.");
-			}
-
-			try {
-				registerObj.put("username", username);
-			} catch (JSONException e) {
-				e.printStackTrace();
-			}
-		}
 
 		// Json Object gets sent to server
 		byte[] registerBytes = registerObj.toString().getBytes();
@@ -144,7 +114,6 @@ public abstract class Client {
 		// schedule a timer to timeout after x amount of seconds of no response
 		// Timer responseTimer = new Timer();
 
-
 		try {
 			client.receive(packet);
 		} catch (IOException e) {
@@ -161,10 +130,20 @@ public abstract class Client {
 
 	}
 
+	// CLIENT IS LOGGED IN, THEY ACCESS MORE OPTIONS (PUBLISH, ETC. ,ETC.)
+	public static void secondStep(DatagramSocket client, Scanner reader) throws JSONException {
 
+
+
+	}
 
 
 }
+
+
+
+
+
 
 		
 
