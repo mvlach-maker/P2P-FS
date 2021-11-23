@@ -79,7 +79,6 @@ public class Server implements Serializable {
 					case "Register":
 						// Form complete request and insert into Json File
 
-
 						jsonRequest.put("header", "Register");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
@@ -89,22 +88,17 @@ public class Server implements Serializable {
 
 						// Create registration object
 						client = new Client(username, clientIp, Main.serverPort, clientTcpPort);
-
 						registerClient = new Registration(serverSocket, clientListArray, clientListLoggedOn);
-
 						registerClient.register(client, requestNumber);
 
 						System.out.println("Client name: ");
 						System.out.println(client.getUsername());
-
-						clientListArray.add(client);
 
 						System.out.println("Client List After Registration: ");
 						for (int i = 0; i <clientListArray.size(); i++) {
 							Client client1 = clientListArray.get(i);
 							client1.printClientInfo();
 						}
-
 						break;
 
 					case "De-Register":
