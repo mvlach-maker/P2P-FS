@@ -4,34 +4,40 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.IOException; 
+import java.io.*;
 
-import java.net.DatagramPacket; 
-import java.net.DatagramSocket; 
-import java.net.InetAddress; 
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.util.*;
 import java.net.SocketException;
 
 // import networking.udpBaseClient;
-// Program runnning on end host and  and providing service to many clients
+// Program running on end host and  and providing service to many clients
 // Always on, waiting for client requests
 // Does not initiate communication with clients 
 // Needs to have a known address
 // 1 Server listening at a specific port
 // A socket connection means the two machines have information about each other’s network location (IP Address) and TCP port.
-public class Server {
 
-	// What if the server unexpectedly shuts down?
-	// How will we save our info?
-	static File requestLogFile;
-	static File clientListFile;
-	static JSONArray clientListArray;
+public class Server implements Serializable {
 
-	public static void main(String[] args) throws InterruptedException, IOException {
+	private static ArrayList<Client> clientListArray;
+	private static ArrayList<Client> clientListLoggedOn;
+	
+	private static Client currentClient;
 
-		requestLogFile = new File("requestLog.json");
-		clientListFile = new File("clientList.json");
-		clientListArray = new JSONArray();
+	Server(ArrayList<Client> clientListArray, ArrayList<Client> clientListLoggedOn) {
+
+		this.clientListArray = clientListArray;
+		this.clientListLoggedOn = clientListLoggedOn;
+
+	}
+
+	public static void main(String[] args) throws InterruptedException, IOException, JSONException, ClassNotFoundException {
+
+		clientListArray = new ArrayList<Client>();
+		clientListLoggedOn = new ArrayList<Client>();
 
 		int requestNumber = 1;
 
@@ -60,38 +66,19 @@ public class Server {
 
 				JSONObject jsonResponse = new JSONObject(request);
 				String header = (String) jsonResponse.get("header");
+				String username;
+				username = (String) jsonResponse.get("username");
 
 				JSONObject jsonRequest = new JSONObject();
 
 				// Update json file with all the requests
-				String username = null;
-				Registration register;
+				Registration registerClient;
+				Client client;
 
 				switch (header) {
-
-					case "Login":
-
-						username = (String) jsonResponse.get("username");
-
-						jsonRequest.put("header", "Login");
-						jsonRequest.put("rq", requestNumber);
-						jsonRequest.put("username", username);
-						jsonRequest.put("ip", clientIp);
-						jsonRequest.put("udp", Main.serverPort);
-						jsonRequest.put("tcp", clientTcpPort);
-						jsonRequest.put("login", true);
-
-						register = new Registration(serverSocket);
-						register.login(jsonRequest, clientListArray, requestNumber);
-
-						// Once the user is logged in they can share files
-
-						break;
-
 					case "Register":
-
 						// Form complete request and insert into Json File
-						username = (String) jsonResponse.get("username");
+
 
 						jsonRequest.put("header", "Register");
 						jsonRequest.put("rq", requestNumber);
@@ -99,70 +86,75 @@ public class Server {
 						jsonRequest.put("ip", clientIp);
 						jsonRequest.put("udp", Main.serverPort);
 						jsonRequest.put("tcp", clientTcpPort);
-						jsonRequest.put("login", true);
 
 						// Create registration object
-						register = new Registration(serverSocket);
-						clientListArray = register.register(jsonRequest, clientListArray, requestNumber);
+						client = new Client(username, clientIp, Main.serverPort, clientTcpPort);
 
-						// Automatically logged in, they can share files
+						registerClient = new Registration(serverSocket, clientListArray, clientListLoggedOn);
+
+						registerClient.register(client, requestNumber);
+
+						System.out.println("Client name: ");
+						System.out.println(client.getUsername());
+
+						clientListArray.add(client);
+
+						System.out.println("Client List After Registration: ");
+						for (int i = 0; i <clientListArray.size(); i++) {
+							Client client1 = clientListArray.get(i);
+							client1.printClientInfo();
+						}
+
 						break;
 
 					case "De-Register":
-
+						// Get username
 						username = (String) jsonResponse.get("username");
+
+						currentClient = getCurrentClient(username, clientIp, clientListArray);
 
 						jsonRequest.put("header", "De-Register");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
-						jsonRequest.put("ip", clientIp);
-						jsonRequest.put("udp", Main.serverPort);
-						jsonRequest.put("tcp", clientTcpPort);
-						jsonRequest.put("login", false);
 
-						register = new Registration(serverSocket);
-						register.deRegister(jsonRequest, clientListArray, requestNumber);
-						break;
-
-					case "Logout":
-
-						username = (String) jsonResponse.get("username");
-						register = new Registration(serverSocket);
-						jsonRequest.put("header", "Logout");
-						jsonRequest.put("rq", requestNumber);
-						jsonRequest.put("username", username);
-						jsonRequest.put("ip", clientIp);
-						jsonRequest.put("tcp", clientTcpPort);
-						jsonRequest.put("login", false);
-						register.logout(jsonRequest, clientListArray, requestNumber);
+						registerClient = new Registration(serverSocket, clientListArray, clientListLoggedOn);
+						registerClient.deRegister(currentClient, clientListArray, clientListLoggedOn, requestNumber);
 						break;
 
 					case "Publish":
 						break;
-					case "Remove":
-						break;
-					case "Retrieve-All":
-						break;
-					case "Retrieve-Info":
-						break;
-					case "Search-File":
-						break;
-					case "Update-Contact":
-						break;
-					default:
-
 				}
-				requestNumber++; // how will the system retain the request number
-			} catch (JSONException e) {
+
+			}
+			catch (JSONException e) {
 				e.printStackTrace();
 			}
-			System.out.println("Client List: " + clientListArray.toString());
+			requestNumber++; // how will the system retain the request number
+
 		}
 	}
+	static Client getCurrentClient(String username, InetAddress ip, ArrayList<Client> clientListArray) {
 
+		Client currentClient = null;
+
+		for (int i = 0; i < clientListArray.size(); i++) {
+
+			currentClient = clientListArray.get(i);
+
+			String username1 = currentClient.getUsername();
+			InetAddress ip1 = currentClient.getIp();
+
+			if (username1.equalsIgnoreCase(username) && ip1.equals(ip)) {
+				// This is the same client
+				break;
+			}
+			else continue;
+		}
+		return currentClient;
+	}
+
+	static void parseListOfFiles(String listOfFiles) {
+
+	}
 }
-
-
-
-
 

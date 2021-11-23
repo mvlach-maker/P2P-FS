@@ -11,20 +11,59 @@ import java.net.*;
 // Initiates communication by sending a request 
 // Needs to know the server's address: IP address and port number
 
-public abstract class Client {
+public class Client {
 
-	boolean login;
-	String username;
+	static String username;
 	InetAddress clientIp;
-	int clientPort;
+	int udp;
+	int tcp;
+	String [] listOfFiles;
 
 	// Constructor
-	public Client(boolean login, String username, InetAddress clientIp, int clientPort){
-		this.login = login;
+	public Client(String username, InetAddress clientIp, int udp, int tcp){
 		this.username = username;
 		this.clientIp = clientIp;
-		this.clientPort = clientPort;
+		this.udp = udp;
+		this.tcp = tcp;
+		listOfFiles = null;
 	}
+
+	String getUsername() {
+		return username;
+	}
+
+	InetAddress getIp() {
+		return clientIp;
+	}
+
+	int getClientUdp() {
+		return udp;
+	}
+
+	int getClientTcp() {
+		return tcp;
+	}
+	String setUsername() {
+		return username;
+	}
+
+	void setIp() {
+		this.clientIp = clientIp;
+	}
+
+	void setClientUdp(int udp) {
+		this.udp = udp;
+	}
+
+	void setClientTcp(int tcp) {
+		this.tcp = tcp;
+	}
+
+	void printClientInfo() {
+		System.out.print("Username: " + username + "\n Ip: " + clientIp + "\n Udp: " + udp +
+				"\n Tcp: " + tcp + "\n");
+	}
+
 
 	public static void main(String[]  args) throws InterruptedException, IOException, JSONException {
 
@@ -55,21 +94,14 @@ public abstract class Client {
 				String reason = (String) JsonResponseRegistration.get("reason");
 				if (reason.equals("You are already registered.")) {
 					// You are logged in
-
 					i = false;
 				}
 			} else {
 				// You are not logged in, stay in the loop
 			}
 		}
+		Client.secondStep(client, username);
 
-		// If the response is logged in or registered
-		// If not
-		// Explore more options
-		// Publish, remove, retrieve, search file, download, update contact,
-
-
-		// close client and reader
 		reader.close();
 		client.close();
 	}
@@ -81,7 +113,6 @@ public abstract class Client {
 
 		boolean i = true;
 		System.out.println("Enter username: ");
-		String username;
 		username = reader.next();
 
 		// Register
@@ -127,14 +158,115 @@ public abstract class Client {
 
 		// Use the Json response to continue the program
 		return jsonResponse;
-
 	}
 
 	// CLIENT IS LOGGED IN, THEY ACCESS MORE OPTIONS (PUBLISH, ETC. ,ETC.)
-	public static void secondStep(DatagramSocket client, Scanner reader) throws JSONException {
+	public static void secondStep(DatagramSocket client, String username) throws JSONException {
 
+		JSONObject secondClientRequest = new JSONObject();
 
+		System.out.print("Choose one of the following options for P2P File Sharing: \n a) Publish File \n b) Remove File" +
+				"\n c) Retrieve All Clients \n d) Retrieve Client Info \n e) Search-File \n f) Download File" +
+				"\n g) Update Contact Info  \n h) De-Register \n");
 
+		Scanner reader = new Scanner(System.in);
+		String input = reader.next();
+
+		// Create second requests and send to the server
+
+		switch(input.toLowerCase()) {
+			case "a":
+
+				System.out.println("Enter List of File(s): ");
+				reader = new Scanner(System.in);
+				String listOfFiles = reader.nextLine();
+
+				secondClientRequest.put("header","Publish");
+				secondClientRequest.put("username", username);
+				secondClientRequest.put("files", listOfFiles);
+				reader.close();
+				break;
+
+			case "b":
+
+				System.out.println("Enter List of File(s) to Remove: ");
+				reader = new Scanner(System.in);
+				listOfFiles = reader.nextLine();
+
+				secondClientRequest.put("header","Remove");
+				secondClientRequest.put("username", username);
+				secondClientRequest.put("files", listOfFiles);
+				reader.close();
+				break;
+
+			case "c":
+				secondClientRequest.put("header","Retrieve-All");
+				secondClientRequest.put("username", username);
+				break;
+
+			case "d":
+
+				System.out.println("Enter Peer Username: ");
+				reader = new Scanner(System.in);
+				String peerUsername = reader.next();
+
+				secondClientRequest.put("header","Retrieve-Info");
+				secondClientRequest.put("username", peerUsername);
+				reader.close();
+				break;
+			case "e":
+				secondClientRequest.put("header","Search-File");
+				secondClientRequest.put("username", username);
+				break;
+			case "f":
+				secondClientRequest.put("header","Download");
+				secondClientRequest.put("username", username);
+				break;
+			case "g":
+				secondClientRequest.put("header","Update-Contact");
+				secondClientRequest.put("username", username);
+				System.out.println("Input ip address: ");
+				System.out.println("Input udp socket number: ");
+				System.out.println("Input tcp socket number: ");
+
+				break;
+			case "h":
+				secondClientRequest.put("header","De-Register");
+				secondClientRequest.put("username", username);
+				break;
+			default:
+				System.out.println("Invalid Input.");
+		}
+
+		// Send this request to server
+		// Json Object gets sent to server
+		byte[] secondRequestBytes = secondClientRequest.toString().getBytes();
+
+		DatagramPacket p = new DatagramPacket(secondRequestBytes,
+				secondRequestBytes.length, Main.serverIp, Main.serverPort);
+
+		// client sends it to the server
+		try {
+			client.send(p);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// Client receives response from server
+		byte[] buffer = new byte[300];
+		DatagramPacket packet = new DatagramPacket(buffer,
+				buffer.length);
+		try {
+			client.receive(packet);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// Receive a response from the server
+		String serverResponse = new String(packet.getData());
+		JSONObject jsonResponse = new JSONObject(serverResponse);
+		System.out.println("Server response: " + jsonResponse.toString());
 	}
 
 
