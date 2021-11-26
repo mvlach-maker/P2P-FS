@@ -10,6 +10,7 @@ import java.net.*;
 import java.util.*;
 
 // Data Structure class
+
 public class Client {
 
 	String username;
@@ -27,7 +28,6 @@ public class Client {
 		this.udp = udp;
 		this.tcp = tcp;
 		listOfFileObjects = new ArrayList<>();
-
 	}
 
 	JSONObject getClientInfo() throws JSONException {
@@ -35,6 +35,7 @@ public class Client {
 		client.put("username", username);
 		client.put("ip", clientIp);
 		client.put("tcp", tcp);
+		client.put("udp", udp);
 
 		listOfFiles = new ArrayList<>();
 
@@ -87,10 +88,6 @@ public class Client {
 		for (File f: listOfFileObjects) {
 			System.out.println(f.getName());
 		}
-	}
-
-	public void setListOfFiles(ArrayList<File> listOfFileObjects) {
-		this.listOfFileObjects = listOfFileObjects;
 	}
 }
 

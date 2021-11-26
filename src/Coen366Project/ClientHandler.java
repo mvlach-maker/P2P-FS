@@ -1,5 +1,5 @@
-import Coen366Project.Client;
-import Coen366Project.Server;
+package Coen366Project;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -72,6 +72,7 @@ public class ClientHandler {
     public static void secondStep(DatagramSocket client, String username) throws JSONException {
 
         JSONObject secondClientRequest = new JSONObject();
+        String nameOfFile;
 
         System.out.print("Choose one of the following options for P2P File Sharing: \n a) Publish File \n b) Remove File" +
                 "\n c) Retrieve All Clients \n d) Retrieve Client Info \n e) Search-File \n f) Download File" +
@@ -84,7 +85,7 @@ public class ClientHandler {
         switch(input.toLowerCase()) {
             case "a":
 
-                System.out.println("Enter List of File(s): ");
+                System.out.println("Enter List of File(s) to Publish: ");
                 reader = new Scanner(System.in);
                 String listOfFiles = reader.nextLine();
 
@@ -121,14 +122,24 @@ public class ClientHandler {
                 secondClientRequest.put("username", peerUsername);
                 reader.close();
                 break;
+
             case "e":
                 secondClientRequest.put("header","Search-File");
                 secondClientRequest.put("username", username);
+                System.out.println("Input name of the file you would like to search: ");
+                nameOfFile = reader.next();
+                secondClientRequest.put("file", nameOfFile);
                 break;
+
             case "f":
+                // Get Client Info from User
+                // File name, TCP info
+                // Establish TCP connection
+                // Download
                 secondClientRequest.put("header","Download");
                 secondClientRequest.put("username", username);
                 break;
+
             case "g":
                 secondClientRequest.put("header","Update-Contact");
                 secondClientRequest.put("username", username);
@@ -186,6 +197,14 @@ public class ClientHandler {
         String serverResponse = new String(packet.getData());
         JSONObject jsonResponse = new JSONObject(serverResponse);
         System.out.println("Server response: " + jsonResponse.toString());
+
+        if (jsonResponse.get("header").equals("Search-File")) {
+            // We can now download the file
+            System.out.println("Would you like to download? (Y/N) " );
+            // Get Client Info - will automatically download from the first client on the list
+            // File Name
+            // Establish TCP connection
+        }
         reader.close();
     }
 
@@ -227,9 +246,7 @@ public class ClientHandler {
             }
         }
         ClientHandler.secondStep(client, username);
-
         reader.close();
         client.close();
-
     }
 }
