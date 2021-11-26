@@ -4,10 +4,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
-import java.net.*;
-import java.util.*;
+import static com.sun.xml.internal.xsom.impl.util.Uri.isValid;
 
 
 // Always on, waiting for client requests
@@ -39,7 +46,8 @@ public class Server implements Serializable {
 		clientListLoggedOn = new ArrayList<>();
 		listOfFiles = new ArrayList<>();
 		listOfFileObjects = new ArrayList<>();
-		int index;
+		int index1;
+		int index2;
 
 		int requestNumber = 1;
 		serverSocket = new DatagramSocket(serverPort);
@@ -77,7 +85,6 @@ public class Server implements Serializable {
 					case "Register":
 						// Form complete request and insert into Json File
 						username = (String) jsonResponse.get("username");
-
 						jsonRequest.put("header", "Register");
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
@@ -106,7 +113,8 @@ public class Server implements Serializable {
 						String listOfFiles = (String) jsonResponse.get("files");
 						ArrayList<String> files = parseListOfFiles(listOfFiles);
 						currentClient = getCurrentClient(username, clientIp);
-						index = getClientIndex(currentClient);
+						index1 = getClientIndex(currentClient);
+						index2 = getClientIndexLoggedOn(currentClient);
 
 						for (String file : files) {
 
@@ -136,7 +144,8 @@ public class Server implements Serializable {
 									response.put("rq", requestNumber);
 									// REPLACE THIS NEW CONTACT IN THE CLIENT ARRAY LIST
 									currentClient.listOfFileObjects.add(f);
-									clientListArray.set(index, currentClient);
+									clientListArray.set(index1, currentClient);
+									clientListLoggedOn.set(index2, currentClient);
 								}
 
 							}
@@ -151,10 +160,12 @@ public class Server implements Serializable {
 
 					case "Remove":
 						username = (String) jsonResponse.get("username");
+
 						listOfFiles = (String) jsonResponse.get("files");
 						files = parseListOfFiles(listOfFiles);
 						currentClient = getCurrentClient(username, clientIp);
-						index = getClientIndex(currentClient);
+						index1 = getClientIndex(currentClient);
+						index2 = getClientIndexLoggedOn(currentClient);
 
 						boolean fileIsThere = false;
 
@@ -174,8 +185,9 @@ public class Server implements Serializable {
 								if (fileIsThere) {
 									response.put("header", "Removed");
 									response.put("rq", requestNumber);
-									clientListArray.set(index, currentClient);
 									currentClient.listOfFileObjects.remove(f);
+									clientListArray.set(index1, currentClient);
+									clientListLoggedOn.set(index2, currentClient);
 								}
 								else {
 									// The file does not exist
@@ -194,8 +206,6 @@ public class Server implements Serializable {
 						}
 						break;
 					case "Retrieve-All":
-						String listOfUsers;
-						StringBuilder sb = new StringBuilder();
 						response.put("header", "Retrieve");
 						response.put("rq", requestNumber);
 						JSONArray clientListJson = new JSONArray();
@@ -203,11 +213,66 @@ public class Server implements Serializable {
 						for (int i = 0; i < clientListArray.size(); i++) {
 
 							Client client = clientListArray.get(i);
-							clientListJson.put(client.getCLientInfo());
-							//response.put("clients", clientListJson);
+							clientListJson.put(client.getClientInfo());
+
 						}
 						response.put("clients", clientListJson);
-						System.out.println(clientListJson.toString());
+						break;
+
+					case "Retrieve-Info":
+						String peerUsername = (String) jsonResponse.get("username");
+
+						if (isRegistered(peerUsername)){
+							response.put("header", "Retrieve-Info");
+							response.put("rq", requestNumber);
+							Client client = getClient(peerUsername);
+							response.put("client info", client.getClientInfo());
+						}
+						else {
+							// Client does not exist
+							response.put("header", "Retrieve-Error");
+							response.put("reason", "Name Does Not Exist / Not Registered ");
+							response.put("rq", requestNumber);
+						}
+						break;
+
+					case "Update-Contact":
+
+						username = (String) jsonResponse.get("username");
+						String ipUpdated = (String) jsonResponse.get("ip");
+						Client clientToUpdate = getClient(username);
+
+						// Possible errors with ip ? How do we make sure it is valid
+
+						InetAddress ipUpdatedInet = InetAddress.getByName(ipUpdated);
+						int udpUpdated = (int) jsonResponse.get("udp");
+						int tcpUpdated = (int) jsonResponse.get("tcp");
+
+						if (isValid(ipUpdated)) {
+							index1 = getClientIndex(clientToUpdate);
+							index2 = getClientIndexLoggedOn(clientToUpdate);
+
+							clientToUpdate.setClientIp(ipUpdatedInet);
+							clientToUpdate.setClientUdp(udpUpdated);
+							clientToUpdate.setClientTcp(tcpUpdated);
+
+							clientListArray.set(index1, clientToUpdate);
+							clientListLoggedOn.set(index2, clientToUpdate);
+
+							response.put("header", "Update-Confirmed");
+							response.put("rq", requestNumber);
+							response.put("ip", ipUpdatedInet);
+							response.put("udp", udpUpdated);
+							response.put("tcp", tcpUpdated);
+						}
+						else if (!isValid(ipUpdated)) {
+							response.put("header", "Update-Denied");
+							response.put("rq", requestNumber);
+							response.put("reason", "Invalid IP address");
+						}
+
+						System.out.println(clientToUpdate.getIp());
+						// Replace this client in the array of clients
 						break;
 				}
 			}
@@ -248,6 +313,43 @@ public class Server implements Serializable {
 		return index;
 	}
 
+	static int getClientIndexLoggedOn(Client client) {
+		int index = -1;
+		for (int i = 0; i < clientListLoggedOn.size(); i++) {
+			Client currentClient = clientListLoggedOn.get(i);
+			if (client == currentClient) {
+				index = i;
+			}
+		}
+		return index;
+	}
+
+	static boolean isRegistered(String username) {
+		boolean isRegistered = false;
+
+		for (Client c : clientListArray) {
+			if (c.getUsername().equalsIgnoreCase(username)) {
+				isRegistered = true;
+				break;
+			}
+			else continue;
+		}
+		return isRegistered;
+	}
+
+	static Client getClient (String username) {
+		Client client = null;
+
+		for (Client c : clientListArray) {
+			if (c.getUsername().equalsIgnoreCase(username)) {
+				client = c;
+				break;
+			}
+			else continue;
+		}
+		return client;
+	}
+
 	static Client getCurrentClient(String username, InetAddress ip) {
 
 		Client currentClient = null;
@@ -275,10 +377,11 @@ public class Server implements Serializable {
 
 	public static boolean isLoggedOn(Client client, ArrayList<Client> clientListLoggedOn) {
 		boolean isLoggedOn = false;
+
 		for (int i=0; i < clientListLoggedOn.size(); i++) {
 
 			Client clientObject = clientListLoggedOn.get(i);
-			if (clientObject.getUsername() == client.getUsername())
+			if (clientObject.getUsername().equalsIgnoreCase(client.getUsername()))
 			{
 				isLoggedOn = true;
 				break;
@@ -297,7 +400,6 @@ public class Server implements Serializable {
 			Client clientInArray = clientListArray.get(i);
 
 			String username1 = clientInArray.getUsername();
-
 			// System.out.println("Username 1: " + username1);
 			InetAddress ip1 = clientInArray.getIp();
 
@@ -314,7 +416,6 @@ public class Server implements Serializable {
 				registrationAccepted = false;
 
 				// Write to clientListLoggedOn
-
 				if (!isLoggedOn(client, clientListLoggedOn))  {
 					clientListLoggedOn.add(client);
 				}
@@ -340,6 +441,7 @@ public class Server implements Serializable {
 			clientListLoggedOn.add(client);
 		}
 	}
+
 	public static void deRegister(Client currentClient, int requestNumber) throws JSONException {
 		// Check if user is on file
 		JSONObject response = new JSONObject();

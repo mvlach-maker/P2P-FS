@@ -9,13 +9,7 @@ import java.util.Scanner;
 import java.net.*;
 import java.util.*;
 
-// Is on when it first needs to send a request 
-// Initiates communication by sending a request 
-// Needs to know the server's address: IP address and port number
-
-// everything static should be application. java
-// everything object should be
-
+// Data Structure class
 public class Client {
 
 	String username;
@@ -33,17 +27,22 @@ public class Client {
 		this.udp = udp;
 		this.tcp = tcp;
 		listOfFileObjects = new ArrayList<>();
-		listOfFiles = new ArrayList<>();
+
 	}
 
-	JSONObject getCLientInfo() throws JSONException {
+	JSONObject getClientInfo() throws JSONException {
 		JSONObject client = new JSONObject(); 
 		client.put("username", username);
 		client.put("ip", clientIp);
 		client.put("tcp", tcp);
+
+		listOfFiles = new ArrayList<>();
+
 		for (File f : listOfFileObjects) {
+
 			String filename = f.getName();
 			listOfFiles.add(filename);
+
 		}
 		client.put("listOfFiles", listOfFiles);
 		return client; 
@@ -69,7 +68,7 @@ public class Client {
 		return username;
 	}
 
-	void setIp() {
+	void setClientIp(InetAddress clientIp) {
 		this.clientIp = clientIp;
 	}
 

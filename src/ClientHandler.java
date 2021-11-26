@@ -4,9 +4,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Scanner;
 
 public class ClientHandler {
@@ -134,11 +132,23 @@ public class ClientHandler {
             case "g":
                 secondClientRequest.put("header","Update-Contact");
                 secondClientRequest.put("username", username);
-                System.out.println("Input ip address: ");
-                System.out.println("Input udp socket number: ");
-                System.out.println("Input tcp socket number: ");
+                reader = new Scanner(System.in);
+                System.out.println("Input updated IP address: ");
+                String ipUpdatedString = reader.next();
 
+
+                secondClientRequest.put("ip", ipUpdatedString);
+
+
+                System.out.println("Input updated UDP socket number: ");
+                int udpUpdated = reader.nextInt();
+                secondClientRequest.put("udp", udpUpdated);
+
+                System.out.println("Input updated TCP socket number: ");
+                int tcpUpdated = reader.nextInt();
+                secondClientRequest.put("tcp", tcpUpdated);
                 break;
+
             case "h":
                 secondClientRequest.put("header","De-Register");
                 secondClientRequest.put("username", username);
