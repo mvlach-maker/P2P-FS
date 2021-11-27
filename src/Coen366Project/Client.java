@@ -5,13 +5,16 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 
+import java.io.Serializable;
 import java.util.Scanner;
 import java.net.*;
 import java.util.*;
 
 // Data Structure class
 
-public class Client {
+public class Client implements Serializable {
+
+	private static final long serialVersionUID = 1234568L;
 
 	String username;
 
@@ -29,6 +32,7 @@ public class Client {
 		this.tcp = tcp;
 		listOfFileObjects = new ArrayList<>();
 	}
+
 
 	JSONObject getClientInfo() throws JSONException {
 		JSONObject client = new JSONObject(); 

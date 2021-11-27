@@ -27,7 +27,6 @@ public class Server implements Serializable {
 	static ArrayList<String> listOfFilesString;
 	static ArrayList<File> listOfFileObjects;
 	static DatagramSocket serverSocket;
-	static Serialization serialization;
 	public static InetAddress serverIp = null;
 	static JSONObject response;
 	static int requestNumber;
@@ -42,40 +41,35 @@ public class Server implements Serializable {
 
 	public static void main(String[] args) throws InterruptedException, IOException, JSONException, ClassNotFoundException {
 
+
 		// Deserialization
-		File sFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/serialization.txt");
+		File clientListFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/serialization.txt");
+		clientListArray = new ArrayList<>();
+		clientListLoggedOn = new ArrayList<>();
+		requestNumber = 1;
+		// Check if file is empty before deserialization
 
-		// If file is empty, new client arrays and request number
-		if (sFile.length() == 0) {
-			clientListArray = new ArrayList<>();
-			clientListLoggedOn = new ArrayList<>();
-			requestNumber = 1;
+		if (clientListFile.length() == 0 ) {
+			System.out.println("File is empty");
+			// If file is empty, no need to deserialize
+
 		}
-		// Otherwise, we read from the serialization text file
-
+		// Deserialize File
 		else {
-			serialization = null;
-			try {
-				// Reading the object from a file
-				FileInputStream fis = new FileInputStream(sFile);
-				ObjectInputStream in = new ObjectInputStream(fis);
+			System.out.println("File is not empty");
+			// Reading the object from a file
+			FileInputStream fis = new FileInputStream(clientListFile);
+			ObjectInputStream in = new ObjectInputStream(fis);
 
-				// Method for deserialization of object
-				serialization = (Serialization) in.readObject();
-
-				clientListArray = serialization.clientList;
-				clientListLoggedOn = serialization.clientListLoggedOn;
-				requestNumber = serialization.requestNumber;
-
-				in.close();
-				fis.close();
-				System.out.println("Object has been deserialized");
-			} catch (IOException ex) {
-				System.out.println("IOException is caught");
-			} catch (ClassNotFoundException ex) {
-				System.out.println("ClassNotFoundException" +
-						" is caught");
+			Object obj = null;
+			System.out.println("Deserialized Array");
+			while (!((obj = in.readObject()) instanceof endOfFile)) {
+				// Read every object until you reach end of file
+				System.out.println(((Client)obj).getClientInfo().toString());
+				clientListArray.add((Client)obj);
 			}
+			in.close();
+			fis.close();
 		}
 
 		Client currentClient;
@@ -140,7 +134,7 @@ public class Server implements Serializable {
 						jsonRequest.put("rq", requestNumber);
 						jsonRequest.put("username", username);
 
-						Server.deRegister(currentClient, requestNumber);
+						response = Server.deRegister(currentClient, requestNumber);
 						break;
 
 					case "Publish":
@@ -316,6 +310,7 @@ public class Server implements Serializable {
 						// If found add to the array of clients the have this file
 						JSONArray clientsThatHaveFileJson = new JSONArray();
 						String nameOfFile = (String) jsonResponse.get("file");
+
 						for (Client client : clientListArray) {
 
 							for (File f : client.listOfFileObjects) {
@@ -372,29 +367,35 @@ public class Server implements Serializable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+
 			requestNumber++; // how will the system retain the request number
 
-			serialization = new Serialization(clientListArray, clientListLoggedOn, requestNumber);
-
 			// Serialization
+
 			try {
 				// Saving of object in a file
-				FileOutputStream file = new FileOutputStream(sFile);
+				FileOutputStream file = new FileOutputStream(clientListFile);
 				ObjectOutputStream out = new ObjectOutputStream(file);
 
 				// Method for serialization of object
-				out.writeObject(serialization);
-
+				// Client client = new Client("marina",InetAddress.getByName("127.0.21"),3000, 2323);
+				// out.writeObject(client);
+				for (Client c : clientListArray) {
+					out.writeObject(c);
+				}
+				out.writeObject(new endOfFile());
+				out.flush();
 				out.close();
 				file.close();
 
-				System.out.println("Object has been serialized\n"
-						+ "Data before Deserialization.");
+				System.out.println("Object has been serialized.");
 			}
 
 			catch (IOException ex) {
 				System.out.println("IOException is caught");
 			}
+
+
 
 		}
 	}
@@ -491,43 +492,43 @@ public class Server implements Serializable {
 
 		boolean registrationAccepted = true;
 
-		for (int i = 0; i < clientListArray.size()  ; i++) {
+			for (int i = 0; i < clientListArray.size(); i++) {
 
-			Client clientInArray = clientListArray.get(i);
+				Client clientInArray = clientListArray.get(i);
 
-			String username1 = clientInArray.getUsername();
-			// System.out.println("Username 1: " + username1);
-			InetAddress ip1 = clientInArray.getIp();
+				String username1 = clientInArray.getUsername();
+				// System.out.println("Username 1: " + username1);
+				InetAddress ip1 = clientInArray.getIp();
 
-			String username2 = client.getUsername();
-			// System.out.println("Username 2: " + username2);
-			InetAddress ip2 = client.getIp();
+				String username2 = client.getUsername();
+				// System.out.println("Username 2: " + username2);
+				InetAddress ip2 = client.getIp();
 
-			if (username1.equalsIgnoreCase(username2) && ip1.equals(ip2)) {
-				// You are already registered
-				response.put("header", "Register-Denied");
-				response.put("rq", requestNumber);
-				response.put("reason", "You are already registered.");
-				System.out.println(response.toString());
-				registrationAccepted = false;
+				if (username1.equalsIgnoreCase(username2) && ip1.equals(ip2)) {
+					// You are already registered
+					response.put("header", "Register-Denied");
+					response.put("rq", requestNumber);
+					response.put("reason", "You are already registered.");
+					System.out.println(response.toString());
+					registrationAccepted = false;
 
-				// Write to clientListLoggedOn
-				if (!isLoggedOn(client, clientListLoggedOn))  {
-					clientListLoggedOn.add(client);
-				}
-				break;
-			} else if (username1.equalsIgnoreCase(username2) && !ip1.equals(ip2)) {
+					// Write to clientListLoggedOn
+					if (!isLoggedOn(client, clientListLoggedOn)) {
+						clientListLoggedOn.add(client);
+					}
+					break;
+				} else if (username1.equalsIgnoreCase(username2) && !ip1.equals(ip2)) {
 
-				// username is already in use
+					// username is already in use
 
-				response.put("header", "Register-Denied");
-				response.put("rq", requestNumber);
-				response.put("reason", "Username is already in use.");
-				System.out.println("Username is already in use.");
-				registrationAccepted = false;
-				break;
-			} else continue;
-		}
+					response.put("header", "Register-Denied");
+					response.put("rq", requestNumber);
+					response.put("reason", "Username is already in use.");
+					System.out.println("Username is already in use.");
+					registrationAccepted = false;
+					break;
+				} else continue;
+			}
 
 		if (registrationAccepted) {
 			// We register the client
@@ -538,7 +539,7 @@ public class Server implements Serializable {
 		}
 	}
 
-	public static void deRegister(Client currentClient, int requestNumber) throws JSONException {
+	public static JSONObject deRegister(Client currentClient, int requestNumber) throws JSONException {
 		// Check if user is on file
 		JSONObject response = new JSONObject();
 
@@ -550,9 +551,8 @@ public class Server implements Serializable {
 			String username2 = currentClient.getUsername();
 
 			if (username1.equalsIgnoreCase(username2)) {
-
 				// You are already registered, delete user
-				clientListArray.remove(i);
+				clientListArray.remove(currentClient);
 				// No need for a response
 				response.put("header", "De-Registered");
 				response.put("rq", requestNumber);
@@ -560,6 +560,7 @@ public class Server implements Serializable {
 				break;
 			}
 		}
+
 		for (int i = 0; i < clientListLoggedOn.size(); i++) {
 
 			Client clientObject = clientListLoggedOn.get(i);
@@ -569,10 +570,15 @@ public class Server implements Serializable {
 
 			if (username1.equalsIgnoreCase(username2)) {
 				// Delete user
-				clientListLoggedOn.remove(i);
+				clientListLoggedOn.remove(currentClient);
 				break;
 			}
 		}
+		return response;
 	}
+}
+
+class endOfFile implements Serializable {
+
 }
 

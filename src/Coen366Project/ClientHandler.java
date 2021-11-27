@@ -22,7 +22,6 @@ public class ClientHandler {
 
         boolean i = true;
 
-
         // Register
         try {
             registerObj.put("header", "Register");
@@ -198,13 +197,14 @@ public class ClientHandler {
         JSONObject jsonResponse = new JSONObject(serverResponse);
         System.out.println("Server response: " + jsonResponse.toString());
 
-        if (jsonResponse.get("header").equals("Search-File")) {
+      /*   if (jsonResponse.get("header").equals("Search-File")) {
             // We can now download the file
             System.out.println("Would you like to download? (Y/N) " );
             // Get Client Info - will automatically download from the first client on the list
             // File Name
             // Establish TCP connection
-        }
+        } */
+
         reader.close();
     }
 
