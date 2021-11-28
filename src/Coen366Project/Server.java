@@ -1,5 +1,6 @@
 package Coen366Project;
 
+import com.sun.corba.se.impl.encoding.CDROutputStream;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -13,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static com.sun.xml.internal.xsom.impl.util.Uri.isValid;
-
 
 // Always on, waiting for client requests
 // Does not initiate communication with clients
@@ -29,7 +29,7 @@ public class Server implements Serializable {
 	static DatagramSocket serverSocket;
 	public static InetAddress serverIp = null;
 	static JSONObject response;
-	static int requestNumber;
+	public static Integer requestNumber;
 
 	static {
 		try {
@@ -41,30 +41,25 @@ public class Server implements Serializable {
 
 	public static void main(String[] args) throws InterruptedException, IOException, JSONException, ClassNotFoundException {
 
-
 		// Deserialization
 		File clientListFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/serialization.txt");
+		File clientsLoggedOn = new File("/Users/marina/eclipse-workspace/Coen366Project/src/ClientsLoggedOn.txt");
+		File rqFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/requestNumber.txt");
 		clientListArray = new ArrayList<>();
 		clientListLoggedOn = new ArrayList<>();
 		requestNumber = 1;
-		// Check if file is empty before deserialization
 
-		if (clientListFile.length() == 0 ) {
-			System.out.println("File is empty");
-			// If file is empty, no need to deserialize
 
-		}
-		// Deserialize File
-		else {
-			System.out.println("File is not empty");
+		// Check if file is not empty before deserialization
+		if (clientListFile.length() != 0 ) {
 			// Reading the object from a file
 			FileInputStream fis = new FileInputStream(clientListFile);
 			ObjectInputStream in = new ObjectInputStream(fis);
 
 			Object obj = null;
-			System.out.println("Deserialized Array");
+
+			System.out.println("Clients Registered (Deserialized): ");
 			while (!((obj = in.readObject()) instanceof endOfFile)) {
-				// Read every object until you reach end of file
 				System.out.println(((Client)obj).getClientInfo().toString());
 				clientListArray.add((Client)obj);
 			}
@@ -72,13 +67,39 @@ public class Server implements Serializable {
 			fis.close();
 		}
 
+		// Check if file is not empty before deserialization
+		if (clientsLoggedOn.length() != 0 ) {
+			// Reading the object from a file
+			FileInputStream fis = new FileInputStream(clientListFile);
+			ObjectInputStream ois = new ObjectInputStream(fis);
+
+			Object obj = null;
+
+			// Deserialize Clients Logged On
+			System.out.println("Deserialized Clients Logged On Array (Deserialized): ");
+			while (!((obj = ois.readObject()) instanceof endOfFile)) {
+				System.out.println(((Client)obj).getClientInfo().toString());
+				clientListLoggedOn.add((Client)obj);
+			}
+			fis.close();
+			ois.close();
+		}
+
+		if (rqFile.length() != 0) {
+			FileInputStream fis = new FileInputStream(rqFile);
+			ObjectInputStream ois = new ObjectInputStream(fis);
+			RequestNumber rNum = (RequestNumber)ois.readObject();
+			requestNumber = rNum.getRequestNumber();
+			System.out.println(requestNumber);
+			fis.close();
+			ois.close();
+		}
+
 		Client currentClient;
 		listOfFilesString = new ArrayList<>();
 		listOfFileObjects = new ArrayList<>();
 		int index1;
 		int index2;
-
-
 		serverSocket = new DatagramSocket(serverPort);
 
 		while (true) {
@@ -142,6 +163,7 @@ public class Server implements Serializable {
 						String listOfFiles = (String) jsonResponse.get("files");
 						ArrayList<String> files = parseListOfFiles(listOfFiles);
 						currentClient = getCurrentClient(username, clientIp);
+
 						index1 = getClientIndex(currentClient);
 						index2 = getClientIndexLoggedOn(currentClient);
 
@@ -188,6 +210,7 @@ public class Server implements Serializable {
 						break;
 
 					case "Remove":
+
 						username = (String) jsonResponse.get("username");
 
 						listOfFiles = (String) jsonResponse.get("files");
@@ -234,6 +257,7 @@ public class Server implements Serializable {
 							}
 						}
 						break;
+
 					case "Retrieve-All":
 						response.put("header", "Retrieve");
 						response.put("rq", requestNumber);
@@ -367,36 +391,57 @@ public class Server implements Serializable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-
 			requestNumber++; // how will the system retain the request number
-
-			// Serialization
-
 			try {
 				// Saving of object in a file
-				FileOutputStream file = new FileOutputStream(clientListFile);
-				ObjectOutputStream out = new ObjectOutputStream(file);
+				FileOutputStream fos = new FileOutputStream(rqFile);
+				ObjectOutputStream oos = new ObjectOutputStream(fos);
 
-				// Method for serialization of object
-				// Client client = new Client("marina",InetAddress.getByName("127.0.21"),3000, 2323);
-				// out.writeObject(client);
-				for (Client c : clientListArray) {
-					out.writeObject(c);
-				}
-				out.writeObject(new endOfFile());
-				out.flush();
-				out.close();
-				file.close();
-
-				System.out.println("Object has been serialized.");
+				RequestNumber rqNumber = new RequestNumber(requestNumber);
+				oos.writeObject(rqNumber);
+				oos.flush();
+				oos.close();
+				fos.close();
 			}
 
 			catch (IOException ex) {
 				System.out.println("IOException is caught");
 			}
+			// Serialization
+			try {
+				// Saving of object in a file
+				FileOutputStream fos = new FileOutputStream(clientListFile);
+				ObjectOutputStream oos = new ObjectOutputStream(fos);
 
+				for (Client c : clientListArray) {
+					oos.writeObject(c);
+				}
+				oos.writeObject(new endOfFile());
+				oos.flush();
+				oos.close();
+				fos.close();
+			}		catch (IOException ex) {
+				System.out.println("IOException is caught");
+			}
 
+			try {
+				// Saving of object in a file
+				FileOutputStream fileOutputStream = new FileOutputStream(clientsLoggedOn);
+				ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
 
+				for (Client c : clientListLoggedOn) {
+					objectOutputStream.writeObject(c);
+				}
+
+				objectOutputStream.writeObject(new endOfFile());
+				objectOutputStream.flush();
+				objectOutputStream.close();
+				fileOutputStream.close();
+			}
+
+			catch (IOException ex) {
+				System.out.println("IOException is caught");
+			}
 		}
 	}
 	static int getClientIndex(Client client) {
@@ -468,7 +513,7 @@ public class Server implements Serializable {
 	}
 
 	static ArrayList<String> parseListOfFiles(String listOfFiles) {
-		ArrayList<String> files = new ArrayList<>(Arrays.asList(listOfFiles.split(",")));
+		ArrayList<String> files = new ArrayList<>(Arrays.asList(listOfFiles.split(", ")));
 		return files;
 	}
 
@@ -553,6 +598,7 @@ public class Server implements Serializable {
 			if (username1.equalsIgnoreCase(username2)) {
 				// You are already registered, delete user
 				clientListArray.remove(currentClient);
+				clientListLoggedOn.remove(currentClient);
 				// No need for a response
 				response.put("header", "De-Registered");
 				response.put("rq", requestNumber);
@@ -581,4 +627,17 @@ public class Server implements Serializable {
 class endOfFile implements Serializable {
 
 }
+
+class RequestNumber implements Serializable {
+	int requestNumber;
+
+	RequestNumber(int requestNumber) {
+		this.requestNumber = requestNumber;
+	}
+
+	int getRequestNumber() {
+		return requestNumber;
+	}
+}
+
 

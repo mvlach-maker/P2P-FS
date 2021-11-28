@@ -248,5 +248,6 @@ public class ClientHandler {
         ClientHandler.secondStep(client, username);
         reader.close();
         client.close();
+        // If program ends, remove client from logged on list
     }
 }
