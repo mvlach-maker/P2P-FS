@@ -70,169 +70,169 @@ public class ClientHandler {
     // CLIENT IS LOGGED IN, THEY ACCESS MORE OPTIONS (PUBLISH, ETC. ,ETC.)
     public static void secondStep(DatagramSocket client, String username) throws JSONException {
 
-        JSONObject secondClientRequest = new JSONObject();
-        String nameOfFile;
 
-        System.out.print("Choose one of the following options for P2P File Sharing: \n a) Publish File \n b) Remove File" +
-                "\n c) Retrieve All Clients \n d) Retrieve Client Info \n e) Search-File \n f) Download File" +
-                "\n g) Update Contact Info  \n h) De-Register \n");
+            JSONObject secondClientRequest = new JSONObject();
+            String nameOfFile;
+            Scanner reader = new Scanner(System.in);
 
-        Scanner reader = new Scanner(System.in);
-        String input = reader.next();
-        // Create second requests and send to the server
+                System.out.print("Choose one of the following options for P2P File Sharing: \n a) Publish File \n b) Remove File" +
+                        "\n c) Retrieve All Clients \n d) Retrieve Client Info \n e) Search-File \n f) Download File" +
+                        "\n g) Update Contact Info  \n h) De-Register \n ");
 
-        switch(input.toLowerCase()) {
-            case "a":
-
-                System.out.println("Enter List of File(s) to Publish: ");
-                reader = new Scanner(System.in);
-                String listOfFiles = reader.nextLine();
-
-                secondClientRequest.put("header","Publish");
-                secondClientRequest.put("username", username);
-                secondClientRequest.put("files", listOfFiles);
-                reader.close();
-                break;
-
-            case "b":
-
-                System.out.println("Enter List of File(s) to Remove: ");
-                reader = new Scanner(System.in);
-                listOfFiles = reader.nextLine();
-
-                secondClientRequest.put("header","Remove");
-                secondClientRequest.put("username", username);
-                secondClientRequest.put("files", listOfFiles);
-                reader.close();
-                break;
-
-            case "c":
-                secondClientRequest.put("header","Retrieve-All");
-                secondClientRequest.put("username", username);
-                break;
-
-            case "d":
-
-                System.out.println("Enter Peer Username: ");
-                reader = new Scanner(System.in);
-                String peerUsername = reader.next();
-
-                secondClientRequest.put("header","Retrieve-Info");
-                secondClientRequest.put("username", peerUsername);
-                reader.close();
-                break;
-
-            case "e":
-                secondClientRequest.put("header","Search-File");
-                secondClientRequest.put("username", username);
-                System.out.println("Input name of the file you would like to search: ");
-                nameOfFile = reader.next();
-                secondClientRequest.put("file", nameOfFile);
-                break;
-
-            case "f":
-                // Get Client Info from User
-                // File name, TCP info
-                // Establish TCP connection
-                // Download
-                secondClientRequest.put("header","Download");
-                secondClientRequest.put("username", username);
-                break;
-
-            case "g":
-                secondClientRequest.put("header","Update-Contact");
-                secondClientRequest.put("username", username);
-                reader = new Scanner(System.in);
-                System.out.println("Input updated IP address: ");
-                String ipUpdatedString = reader.next();
+                String input = reader.next();
+                // Create second requests and send to the server
 
 
-                secondClientRequest.put("ip", ipUpdatedString);
+                switch (input.toLowerCase()) {
+                    case "a":
+
+                        System.out.println("Enter List of File(s) to Publish: ");
+                        reader = new Scanner(System.in);
+                        String listOfFiles = reader.nextLine();
+
+                        secondClientRequest.put("header", "Publish");
+                        secondClientRequest.put("username", username);
+                        secondClientRequest.put("files", listOfFiles);
+                        reader.close();
+                        break;
+
+                    case "b":
+
+                        System.out.println("Enter List of File(s) to Remove: ");
+                        reader = new Scanner(System.in);
+                        listOfFiles = reader.nextLine();
+
+                        secondClientRequest.put("header", "Remove");
+                        secondClientRequest.put("username", username);
+                        secondClientRequest.put("files", listOfFiles);
+                        reader.close();
+                        break;
+
+                    case "c":
+                        secondClientRequest.put("header", "Retrieve-All");
+                        secondClientRequest.put("username", username);
+                        reader.close();
+                        break;
+
+                    case "d":
+
+                        System.out.println("Enter Peer Username: ");
+                        reader = new Scanner(System.in);
+                        String peerUsername = reader.next();
+
+                        secondClientRequest.put("header", "Retrieve-Info");
+                        secondClientRequest.put("username", peerUsername);
+                        reader.close();
+                        break;
+
+                    case "e":
+                        secondClientRequest.put("header", "Search-File");
+                        secondClientRequest.put("username", username);
+                        System.out.println("Input name of the file you would like to search: ");
+                        nameOfFile = reader.next();
+                        secondClientRequest.put("file", nameOfFile);
+                        reader.close();
+                        break;
+
+                    case "f":
+                        // Get Client Info from User
+                        // File name, TCP info
+                        // Establish TCP connection
+                        // Download
+                        secondClientRequest.put("header", "Download");
+                        secondClientRequest.put("username", username);
+                        reader.close();
+                        break;
+
+                    case "g":
+                        secondClientRequest.put("header", "Update-Contact");
+                        secondClientRequest.put("username", username);
+                        reader = new Scanner(System.in);
+                        System.out.println("Input updated IP address: ");
+                        String ipUpdatedString = reader.next();
 
 
-                System.out.println("Input updated UDP socket number: ");
-                int udpUpdated = reader.nextInt();
-                secondClientRequest.put("udp", udpUpdated);
+                        secondClientRequest.put("ip", ipUpdatedString);
 
-                System.out.println("Input updated TCP socket number: ");
-                int tcpUpdated = reader.nextInt();
-                secondClientRequest.put("tcp", tcpUpdated);
-                break;
 
-            case "h":
-                secondClientRequest.put("header","De-Register");
-                secondClientRequest.put("username", username);
-                break;
-            default:
-                System.out.println("Invalid Input.");
-        }
+                        System.out.println("Input updated UDP socket number: ");
+                        int udpUpdated = reader.nextInt();
+                        secondClientRequest.put("udp", udpUpdated);
 
-        // Send this request to server
-        // Json Object gets sent to server
-        byte[] secondRequestBytes = secondClientRequest.toString().getBytes();
-        DatagramPacket p = new DatagramPacket(secondRequestBytes,
-                secondRequestBytes.length, Server.serverIp, Server.serverPort);
+                        System.out.println("Input updated TCP socket number: ");
+                        int tcpUpdated = reader.nextInt();
+                        secondClientRequest.put("tcp", tcpUpdated);
+                        reader.close();
+                        break;
 
-        // client sends it to the server
+                    case "h":
+                        secondClientRequest.put("header", "De-Register");
+                        secondClientRequest.put("username", username);
+                        reader.close();
+                        break;
+                    default:
+                        System.out.println("Invalid Input.");
+                        reader.close();
+                }
 
-        try {
-            client.send(p);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                // Send this request to server
+                // Json Object gets sent to server
+                byte[] secondRequestBytes = secondClientRequest.toString().getBytes();
+                DatagramPacket p = new DatagramPacket(secondRequestBytes,
+                        secondRequestBytes.length, Server.serverIp, Server.serverPort);
 
-        // Client receives response from server
-        byte[] buffer = new byte[600];
-        DatagramPacket packet = new DatagramPacket(buffer,
-                buffer.length);
-        try {
-            client.receive(packet);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+                // client sends it to the server
 
-        // Receive a response from the server
-        String serverResponse = new String(packet.getData());
-        JSONObject jsonResponse = new JSONObject(serverResponse);
-        System.out.println("Server response: " + jsonResponse.toString());
+                try {
+                    client.send(p);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-      /*   if (jsonResponse.get("header").equals("Search-File")) {
-            // We can now download the file
-            System.out.println("Would you like to download? (Y/N) " );
-            // Get Client Info - will automatically download from the first client on the list
-            // File Name
-            // Establish TCP connection
-        } */
+                // Client receives response from server
+                byte[] buffer = new byte[600];
+                DatagramPacket packet = new DatagramPacket(buffer,
+                        buffer.length);
+                try {
+                    client.receive(packet);
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
 
-        reader.close();
+                // Receive a response from the server
+                String serverResponse = new String(packet.getData());
+                JSONObject jsonResponse = new JSONObject(serverResponse);
+                System.out.println("Server response: " + jsonResponse.toString());
+
+                //System.out.println("Would you like to continue? (Y/N) \n");
     }
 
 
-    public static void main(String[]  args) throws InterruptedException, IOException, JSONException {
+        public static void main (String[]args) throws InterruptedException, IOException, JSONException {
 
-        // Declare datagramSocket
+            // Declare datagramSocket
+            DatagramSocket client = null;
 
-        DatagramSocket client = null;
+            try {
+                client = new DatagramSocket();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
 
-        try {
-            client = new DatagramSocket();
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
+            // Declare scanner
+            Scanner reader = new Scanner(System.in);
+            String username = ""; //todo watch out
+            boolean i = true;
 
-        // Declare scanner
-        Scanner reader = new Scanner(System.in);
-        String username = ""; //todo watch out
-        boolean i = true;
-        while(i) {
-            username = zeroStep(reader);
-            // Call firstStep method and give it the socket & scanner
-            JSONObject JsonResponseRegistration = ClientHandler.firstStep(client, username);
+            while (i) {
+                username = zeroStep(reader);
+                // Call firstStep method and give it the socket & scanner
+                JSONObject JsonResponseRegistration = ClientHandler.firstStep(client, username);
 
-            String header = (String) JsonResponseRegistration.get("header");
-            if (header.equals("Registered")) {
-                // You are logged in
+                String header = (String) JsonResponseRegistration.get("header");
+                if (header.equals("Registered")) {
+                    // You are logged in
 
                 i = false;
             } else if (header.equals("Register-Denied")) {
@@ -245,9 +245,24 @@ public class ClientHandler {
                 // You are not logged in, stay in the loop
             }
         }
-        ClientHandler.secondStep(client, username);
-        reader.close();
-        client.close();
+            //reader.close();
+
+            /*while (true) {
+                ClientHandler.secondStep(client, username);
+                System.out.println("Would you like to continue? (Y/N)");
+                Scanner scannerMain = new Scanner(System.in);
+
+                if (scannerMain.next().equalsIgnoreCase("n")){
+                    break;
+                }
+            }*/
+
+            ClientHandler.secondStep(client, username);
+
+
+            //System.out.println("Would you like to continue? (Y/N");
+            reader.close();
+            client.close();
         // If program ends, remove client from logged on list
     }
 }
