@@ -1,12 +1,10 @@
 package Coen366Project;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.*;
 import java.util.Scanner;
 
@@ -122,7 +120,7 @@ public class ClientHandler {
         }
         // Json Object gets sent to client
 
-        byte[] buf = new byte[300];
+        byte[] buf = new byte[600];
         DatagramPacket packet = new DatagramPacket(buf,
                 buf.length);
 
@@ -260,7 +258,7 @@ public class ClientHandler {
                         Scanner tcpScanner = new Scanner(System.in);
                         System.out.println("Enter file name to download: ");
                         String fileNamePeer = tcpScanner.next();
-                        System.out.println("Enter Ip address of peer: ");
+                        System.out.println("Enter IP address of peer: ");
                         String ipAddressPeer = tcpScanner.next();
                         System.out.println("Enter TCP port of peer: ");
                         int peerPort = tcpScanner.nextInt();
@@ -269,21 +267,77 @@ public class ClientHandler {
                         secondClientRequest.put("header", "Download");
                         secondClientRequest.put("file", fileNamePeer);
                         String message = secondClientRequest.toString();
+
                         // Start connection
                         Socket clientSocket = new Socket(ipAddressPeer, peerPort);
                         clientSocket.setSoTimeout(2000);
 
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
                         out.println(message);
 
-                        char[] resp = new char[200];
-                        int length = in.read(resp, 0, 200);
+                        char[] resp = new char[300];
 
-                        if (length > 0)
+                        int length;
+
+                        StringBuilder sb = new StringBuilder();
+
+                        while ((length = in.read(resp, 0, 300)) > 0)
+
                         {
-                            System.out.println(String.valueOf(resp));
+                            sb.append(resp);
                         }
+
+
+                        String completeResponse = sb.toString();
+                        String[] removerAfterArray = completeResponse.split("]");
+                        String stringArray = removerAfterArray[0] + "]";
+
+                        System.out.println(stringArray);
+                        JSONArray jsonArrayFile = new JSONArray(stringArray);
+
+                        // Iterate through the JsonArray
+                        int keepTrackOfChunks = 1;
+
+                        String fileName = null;
+                        // Sort the array by chunk number
+                        for (int i = 0; i < jsonArrayFile.length(); i++) {
+                            JSONObject jsonObject1 = jsonArrayFile.getJSONObject(i);
+                            fileName = (String) jsonObject1.get("file");
+                            for (int j = i+1; j< jsonArrayFile.length(); j++) {
+                                JSONObject jsonObject2 = jsonArrayFile.getJSONObject(j);
+                                int chunk1 = (int) jsonObject1.get("chunk");
+                                int chunk2 = (int) jsonObject2.get("chunk");
+                                JSONObject temp = new JSONObject();
+                                if (chunk1 > chunk2) {
+                                    temp = jsonObject1;
+                                    jsonArrayFile.put(i, jsonObject2);
+                                    jsonArrayFile.put(j, temp);
+                                }
+                            }
+                        }
+
+                        // Create a file to download onto
+
+                        String copyFileName = "/Users/marina/eclipse-workspace/Coen366Project/src/Coen366Project/Copy" + fileName;
+
+                        File download = new File(copyFileName);
+                            if (download.createNewFile()) {
+                                System.out.println("File created: " + download.getName());
+                            } else {
+                                System.out.println("File already exists");
+                            }
+                    FileWriter myWriter = new FileWriter(download);
+                        // Write to file
+                            for (int i = 0; i < jsonArrayFile.length(); i++) {
+                                JSONObject jsonObject = jsonArrayFile.getJSONObject(i);
+                                String text = (String) jsonObject.get("text");
+                                myWriter.write(text);
+                            }
+
+                            myWriter.close();
+
                         in.close();
                         out.close();
                         clientSocket.close();

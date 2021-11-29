@@ -1,5 +1,6 @@
 package Coen366Project;
 import netscape.javascript.JSObject;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
@@ -10,6 +11,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.nio.Buffer;
+import java.util.Scanner;
 
 
 public class ClientAsServerTCP implements Runnable {
@@ -34,10 +36,11 @@ public class ClientAsServerTCP implements Runnable {
             System.out.println(serverSocket.getLocalPort());
             Socket clientSocket = serverSocket.accept();
             out = new PrintWriter(clientSocket.getOutputStream(), true);
+
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             String message = in.readLine();
-            System.out.println("From another client: " + message);
+            System.out.println("Message from another client " + clientSocket.getInetAddress() + ": " + message);
 
             JSONObject jsonRequest = new JSONObject(message);
             String header = (String) jsonRequest.get("header");
@@ -50,24 +53,38 @@ public class ClientAsServerTCP implements Runnable {
                 if (fileToDownload.isFile() && fileToDownload.exists()) {
                     // Download file
                     int chunkNumber = 1;
-                    BufferedReader reader = new BufferedReader(new FileReader(fileToDownload));
                     char[] buffer = new char[200];
 
-                    int length = (reader.read(buffer, 0, 200));
-                    while (length > 0) {
+                    BufferedReader reader = new BufferedReader(new FileReader(fileToDownload));
+
+                    int length;
+
+                    JSONArray jsonResponseArray = new JSONArray();
+
+                    while ((length = reader.read(buffer)) > 0) {
 
                         JSONObject jsonResponse = new JSONObject();
                         String chunkOfFile = String.valueOf(buffer);
+
                         if (length < 200) {
                             jsonResponse.put("header", "File-End");
+                            jsonResponse.put("file", fileName);
+                            jsonResponse.put("chunk", chunkNumber);
+                            jsonResponse.put("text", chunkOfFile);
+                            jsonResponseArray.put(jsonResponse);
+                            out.print(jsonResponseArray);
+
                         } else jsonResponse.put("header", "File");
 
                         jsonResponse.put("file", fileName);
                         jsonResponse.put("chunk", chunkNumber);
                         jsonResponse.put("text", chunkOfFile);
 
-                        out.write(jsonResponse.toString());
+                        System.out.println("\n" + jsonResponse.toString() + "\n");
+                        jsonResponseArray.put(jsonResponse);
                         out.flush();
+
+                        buffer = new char[200];
                         chunkNumber++;
                     }
                 }
