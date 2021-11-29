@@ -107,14 +107,6 @@ public class ClientAsServerTCP implements Runnable {
         serverSocket.close();
     }
 
-    public InetAddress getSocketAddress() {
-        return this.serverSocket.getInetAddress();
-    }
-
-    public int getPort() {
-        return this.serverSocket.getLocalPort();
-    }
-
     public void run() {
         try {
             listen();

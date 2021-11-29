@@ -333,11 +333,9 @@ public class ClientHandler {
                 String[] removerAfterArray = completeResponse.split("]");
                 String stringArray = removerAfterArray[0] + "]";
 
-                System.out.println(stringArray);
+                System.out.println("Message from client: \n" + stringArray);
                 JSONArray jsonArrayFile = new JSONArray(stringArray);
 
-                // Iterate through the JsonArray
-                int keepTrackOfChunks = 1;
 
                 String fileName = null;
                 // Sort the array by chunk number
