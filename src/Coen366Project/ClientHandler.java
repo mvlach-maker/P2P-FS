@@ -11,8 +11,24 @@ import java.util.Scanner;
 public class ClientHandler {
 
     private static int myTcpPort;
+    public static Integer requestNumber;
+    private static File rqFile;
 
     public static void main (String[]args) throws Exception {
+
+        rqFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/requestNumber.txt");
+        requestNumber = 1;
+
+        if (rqFile.length() != 0) {
+            FileInputStream fis = new FileInputStream(rqFile);
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            RequestNumber rNum = (RequestNumber)ois.readObject();
+            requestNumber = rNum.getRequestNumber();
+            // System.out.println("Request Number: " + requestNumber);
+            fis.close();
+            ois.close();
+        }
+
         // Declare datagramSocket for UDP
         DatagramSocket client = null;
 
@@ -96,14 +112,15 @@ public class ClientHandler {
 
         JSONObject registerObj = new JSONObject();
 
-        // Register
-
+        // Get request number from file
         try {
             registerObj.put("header", "Register");
             registerObj.put("username", username);
+            registerObj.put("rq", requestNumber);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
 
         // Json Object gets sent to server
         byte[] registerBytes = registerObj.toString().getBytes();
@@ -173,6 +190,23 @@ public class ClientHandler {
             System.out.println("Server response: " + jsonResponse.toString());
 
         }
+        requestNumber++;
+
+        try {
+            // Saving of object in a file
+            FileOutputStream fos = new FileOutputStream(rqFile);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+
+            RequestNumber rqNumber = new RequestNumber(requestNumber);
+            oos.writeObject(rqNumber);
+            oos.flush();
+            oos.close();
+            fos.close();
+        }
+
+        catch (IOException ex) {
+            System.out.println("IOException is caught");
+        }
         // Use the Json response to continue the program
         return jsonResponse;
     }
@@ -202,6 +236,7 @@ public class ClientHandler {
 
                 secondClientRequest.put("header", "Publish");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 secondClientRequest.put("files", listOfFiles);
                 //reader.close();
                 thirdStep(client, secondClientRequest);
@@ -216,6 +251,7 @@ public class ClientHandler {
 
                 secondClientRequest.put("header", "Remove");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 secondClientRequest.put("files", listOfFiles);
                 //reader.close();
                 thirdStep(client, secondClientRequest);
@@ -225,6 +261,7 @@ public class ClientHandler {
             case "c":
                 secondClientRequest.put("header", "Retrieve-All");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 //reader.close();
                 thirdStep(client, secondClientRequest);
                 break;
@@ -238,6 +275,7 @@ public class ClientHandler {
 
                 secondClientRequest.put("header", "Retrieve-Info");
                 secondClientRequest.put("username", peerUsername);
+                secondClientRequest.put("rq", requestNumber);
                 //reader.close();
                 thirdStep(client, secondClientRequest);
                 break;
@@ -246,6 +284,7 @@ public class ClientHandler {
             case "e":
                 secondClientRequest.put("header", "Search-File");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 System.out.println("Input name of the file you would like to search: ");
                 nameOfFile = reader.next();
                 secondClientRequest.put("file", nameOfFile);
@@ -266,10 +305,14 @@ public class ClientHandler {
 
                 secondClientRequest.put("header", "Download");
                 secondClientRequest.put("file", fileNamePeer);
+                secondClientRequest.put("rq", requestNumber);
                 String message = secondClientRequest.toString();
 
                 // Start connection
+
+            try {
                 Socket clientSocket = new Socket(ipAddressPeer, peerPort);
+
                 clientSocket.setSoTimeout(2000);
 
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
@@ -283,12 +326,8 @@ public class ClientHandler {
 
                 StringBuilder sb = new StringBuilder();
 
-                while ((length = in.read(resp, 0, 300)) > 0)
-
-                {
+                while (in.read(resp, 0, 300) > 0)
                     sb.append(resp);
-                }
-
 
                 String completeResponse = sb.toString();
                 String[] removerAfterArray = completeResponse.split("]");
@@ -342,16 +381,25 @@ public class ClientHandler {
                 out.close();
                 clientSocket.close();
 
+    }
+            catch (ConnectException e) {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("header", "Download-Error");
+                jsonObject.put("reason", "User Is Not Logged In Or Registered.");
+                jsonObject.put("rq", requestNumber);
+                System.out.print(jsonObject.toString() + "\n");
+            }
                 break;
 
             // Update Contact
             case "g":
+
                 secondClientRequest.put("header", "Update-Contact");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 reader = new Scanner(System.in);
                 System.out.println("Input updated IP address: ");
                 String ipUpdatedString = reader.next();
-
                 secondClientRequest.put("ip", ipUpdatedString);
 
 
@@ -370,6 +418,7 @@ public class ClientHandler {
             case "h":
                 secondClientRequest.put("header", "De-Register");
                 secondClientRequest.put("username", username);
+                secondClientRequest.put("rq", requestNumber);
                 //readerSecondStep.close();
                 thirdStep(client, secondClientRequest);
                 System.exit(-1);
@@ -379,6 +428,21 @@ public class ClientHandler {
                 System.out.println("Invalid Input.");
                 //reader.close();
                 thirdStep(client, secondClientRequest);
+        }
+
+        requestNumber++;
+        // Save request number to file
+        try {
+            FileOutputStream fos = new FileOutputStream(rqFile);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+
+            RequestNumber rqNumber = new RequestNumber(requestNumber);
+            oos.writeObject(rqNumber);
+            oos.flush();
+            oos.close();
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

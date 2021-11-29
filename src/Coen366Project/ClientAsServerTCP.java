@@ -20,6 +20,7 @@ public class ClientAsServerTCP implements Runnable {
     private Socket clientSocket;
     private PrintWriter out;
     private BufferedReader in;
+    private int requestNumber;
 
     public ClientAsServerTCP(ServerSocket serverSocket) throws Exception {
         this.serverSocket = serverSocket;
@@ -33,17 +34,18 @@ public class ClientAsServerTCP implements Runnable {
 
         while (running) {
 
-            System.out.println(serverSocket.getLocalPort());
+            // System.out.println(serverSocket.getLocalPort());
             Socket clientSocket = serverSocket.accept();
             out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             String message = in.readLine();
-            System.out.println("Message from another client " + clientSocket.getInetAddress() + ": " + message);
+            System.out.println("Message from client at address " + clientSocket.getInetAddress() + ": " + message);
 
             JSONObject jsonRequest = new JSONObject(message);
             String header = (String) jsonRequest.get("header");
+            int requestNumber = (int) jsonRequest.get("rq");
 
             if (header.equalsIgnoreCase("Download")) {
 
@@ -71,6 +73,7 @@ public class ClientAsServerTCP implements Runnable {
                             jsonResponse.put("file", fileName);
                             jsonResponse.put("chunk", chunkNumber);
                             jsonResponse.put("text", chunkOfFile);
+                            jsonResponse.put("rq", requestNumber);
                             jsonResponseArray.put(jsonResponse);
                             out.print(jsonResponseArray);
 
@@ -79,8 +82,9 @@ public class ClientAsServerTCP implements Runnable {
                         jsonResponse.put("file", fileName);
                         jsonResponse.put("chunk", chunkNumber);
                         jsonResponse.put("text", chunkOfFile);
+                        jsonResponse.put("rq", requestNumber);
 
-                        System.out.println("\n" + jsonResponse.toString() + "\n");
+                        System.out.println("Message sent to Client: " + jsonResponse.toString() + "\n");
                         jsonResponseArray.put(jsonResponse);
                         out.flush();
 

@@ -12,4 +12,5 @@ public class RequestNumber implements Serializable {
     int getRequestNumber() {
         return requestNumber;
     }
+
 }
