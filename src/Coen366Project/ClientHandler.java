@@ -19,16 +19,17 @@ public class ClientHandler {
         rqFile = new File("/Users/marina/eclipse-workspace/Coen366Project/src/requestNumber.txt");
         requestNumber = 1;
 
-        if (rqFile.length() != 0) {
-            FileInputStream fis = new FileInputStream(rqFile);
-            ObjectInputStream ois = new ObjectInputStream(fis);
-            RequestNumber rNum = (RequestNumber)ois.readObject();
-            requestNumber = rNum.getRequestNumber();
-            // System.out.println("Request Number: " + requestNumber);
-            fis.close();
-            ois.close();
+        synchronized (rqFile) {
+            if (rqFile.length() != 0) {
+                FileInputStream fis = new FileInputStream(rqFile);
+                ObjectInputStream ois = new ObjectInputStream(fis);
+                RequestNumber rNum = (RequestNumber) ois.readObject();
+                requestNumber = rNum.getRequestNumber();
+                // System.out.println("Request Number: " + requestNumber);
+                fis.close();
+                ois.close();
+            }
         }
-
         // Declare datagramSocket for UDP
         DatagramSocket client = null;
 
@@ -430,17 +431,19 @@ public class ClientHandler {
 
         requestNumber++;
         // Save request number to file
-        try {
-            FileOutputStream fos = new FileOutputStream(rqFile);
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
+        synchronized (rqFile) {
+            try {
+                FileOutputStream fos = new FileOutputStream(rqFile);
+                ObjectOutputStream oos = new ObjectOutputStream(fos);
 
-            RequestNumber rqNumber = new RequestNumber(requestNumber);
-            oos.writeObject(rqNumber);
-            oos.flush();
-            oos.close();
-            fos.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+                RequestNumber rqNumber = new RequestNumber(requestNumber);
+                oos.writeObject(rqNumber);
+                oos.flush();
+                oos.close();
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
